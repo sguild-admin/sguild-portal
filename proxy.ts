@@ -7,8 +7,6 @@ const isPublicRoute = createRouteMatcher([
 
 const isProtectedRoute = createRouteMatcher([
   "/portal(.*)",
-  "/admin(.*)",
-  "/coach(.*)",
   "/api(.*)",
 ])
 
