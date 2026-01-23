@@ -23,10 +23,7 @@ export async function requireClerkOrgId() {
   return a.orgId
 }
  
-/**
- * Verify Clerk webhooks (Svix). Requires CLERK_WEBHOOK_SECRET and the `svix` package.
- * If you do not use webhooks yet, you can ignore this.
- 
+
 export async function verifyClerkWebhook(request: Request): Promise<unknown> {
   const secret = env.CLERK_WEBHOOK_SECRET
   if (!secret) throw new BadRequestError("CLERK_WEBHOOK_SECRET is not set")
@@ -52,4 +49,4 @@ export async function verifyClerkWebhook(request: Request): Promise<unknown> {
     "svix-signature": svixSignature,
   })
 }
-  */
+
