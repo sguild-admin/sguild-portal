@@ -2,6 +2,7 @@
 import "server-only"
 
 import type { AppCtx } from "@/modules/_shared/ctx"
+import { HttpError } from "@/modules/_shared/errors"
 import { idempotencyService } from "@/modules/_shared/idempotency"
 import { membersService } from "@/modules/members/members.service"
 import { orgService } from "@/modules/org/org.service"
@@ -24,6 +25,10 @@ export async function handleClerkEventAction(args: {
   eventCreatedAt: Date
 }) {
   const { ctx, event, eventCreatedAt } = args
+
+  if (!event?.id || typeof event.id !== "string") {
+    throw new HttpError(400, "INVALID_WEBHOOK_EVENT", "Missing event id")
+  }
 
   const { processed } = await idempotencyService.runOnce(ctx, {
     provider: "clerk",
