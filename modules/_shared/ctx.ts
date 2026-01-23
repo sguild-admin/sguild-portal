@@ -1,5 +1,5 @@
 // modules/_shared/ctx.ts
-import { PrismaClient } from "@prisma/client"
+import { PrismaClient } from "../../prisma/generated/client"
 import { auth, clerkClient } from "@clerk/nextjs/server"
 
 export type AuthInfo = {

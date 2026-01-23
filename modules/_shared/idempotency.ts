@@ -1,5 +1,5 @@
 // modules/_shared/idempotency.ts
-import { PrismaClient, type WebhookEvent } from "@prisma/client"
+import { PrismaClient, type WebhookEvent } from "../../prisma/generated/client"
 import { HttpError } from "./errors"
 
 export type IdempotencyProvider = "clerk" | "stripe" | "other"

@@ -2,8 +2,8 @@
 import "server-only"
 
 import { auth } from "@clerk/nextjs/server"
-import type { AppUser, Organization, OrgMembership } from "@prisma/client"
-import { MembershipStatus, OrgRole } from "@prisma/client"
+import type { AppUser, Organization, OrgMembership } from "../../prisma/generated/client"
+import { MembershipStatus, OrgRole } from "../../prisma/generated/client"
 
 import { orgService } from "@/modules/org/org.service"
 import { membersService } from "@/modules/members/members.service"

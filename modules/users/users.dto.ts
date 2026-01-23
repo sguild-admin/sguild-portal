@@ -1,5 +1,5 @@
 // modules/users/users.dto.ts
-import type { AppUser } from "@prisma/client"
+import type { AppUser } from "../../prisma/generated/client"
 
 export type AppUserDTO = {
   id: string

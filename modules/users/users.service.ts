@@ -1,7 +1,7 @@
 // modules/users/users.service.ts
 import "server-only"
 
-import type { AppUser } from "@prisma/client"
+import type { AppUser } from "../../prisma/generated/client"
 import { usersRepo } from "@/modules/users/users.repo"
 
 export const usersService = {

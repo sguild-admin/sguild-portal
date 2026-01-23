@@ -1,6 +1,6 @@
 // modules/members/members.schema.ts
 import { z } from "zod"
-import { OrgRole, MembershipStatus } from "@prisma/client"
+import { OrgRole, MembershipStatus } from "../../prisma/generated/client"
 
 export const ListMembersQuerySchema = z.object({
   role: z.nativeEnum(OrgRole).optional(),

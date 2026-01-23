@@ -2,7 +2,7 @@
 import "server-only"
 
 import { prisma } from "@/lib/prisma"
-import type { AppUser, Prisma } from "@prisma/client"
+import type { AppUser, Prisma } from "../../prisma/generated/client"
 
 type Db = Prisma.TransactionClient | typeof prisma
 

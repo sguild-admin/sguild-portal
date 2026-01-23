@@ -1,7 +1,7 @@
 // modules/members/members.actions.ts
 import "server-only"
 
-import { MembershipStatus, OrgRole } from "@prisma/client"
+import { MembershipStatus, OrgRole } from "../../prisma/generated/client"
 import { authzService, HttpError } from "@/modules/authz/authz.service"
 import { membersService } from "@/modules/members/members.service"
 import { usersService } from "@/modules/users/users.service"

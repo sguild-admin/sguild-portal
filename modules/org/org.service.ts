@@ -1,7 +1,7 @@
 // modules/org/org.service.ts
 import "server-only"
 
-import type { Organization } from "@prisma/client"
+import type { Organization } from "../../prisma/generated/client"
 import { orgRepo, type UpsertOrgInput } from "@/modules/org/org.repo"
 
 export const orgService = {
