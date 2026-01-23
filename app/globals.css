@@ -1,0 +1,28 @@
+@import "tailwindcss";
+
+
+/* Keep the base background stable (helps avoid dark overscroll flashes on mobile) */
+html,
+body {
+  height: 100%;
+  background: #f0f9ff; /* tailwind sky-50 */
+}
+
+body {
+  color: rgb(30 41 59); /* slate-800 */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Your recent gradient container look */
+#content {
+  min-height: 100vh;
+  background: linear-gradient(to bottom, #f0f9ff, #ffffff);
+}
+
+/* Optional: reduces iOS “rubber band” weirdness in some cases */
+@supports (overscroll-behavior: none) {
+  body {
+    overscroll-behavior-y: none;
+  }
+}

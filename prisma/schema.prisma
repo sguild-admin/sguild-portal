@@ -1,0 +1,73 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../prisma/generated"
+}
+
+datasource db {
+  provider  = "postgresql"
+}
+
+model Organization {
+  id         String   @id @default(uuid()) @db.Uuid
+  clerkOrgId String   @unique @db.Text
+  name       String   @db.Text
+
+  // optional: enforce “one main admin” at the org record
+  primaryAdminClerkUserId String? @db.Text
+
+  members    OrgMembership[]
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([primaryAdminClerkUserId])
+}
+
+model AppUser {
+  id          String   @id @default(uuid()) @db.Uuid
+  clerkUserId String   @unique @db.Text
+
+  // global privilege not tied to any org
+  isSuperAdmin Boolean @default(false)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+enum OrgRole {
+  ADMIN
+  COACH
+}
+
+enum MembershipStatus {
+  INVITED
+  ACTIVE
+  DISABLED
+}
+
+model OrgMembership {
+  id          String           @id @default(uuid()) @db.Uuid
+
+  orgId       String           @db.Uuid
+  org         Organization     @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  // link to Clerk user identity
+  clerkUserId String           @db.Text
+
+  role        OrgRole
+  status      MembershipStatus @default(INVITED)
+
+  invitedAt   DateTime?
+  activatedAt DateTime?
+  disabledAt  DateTime?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // a Clerk user can have only one membership per org in your DB
+  @@unique([orgId, clerkUserId])
+
+  // common query patterns
+  @@index([clerkUserId])
+  @@index([orgId, role, status])
+}
