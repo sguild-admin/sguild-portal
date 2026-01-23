@@ -1,9 +1,6 @@
-import 'dotenv/config'
-import { defineConfig, env } from 'prisma/config'
+// prisma.config.ts
+import "dotenv/config"
 
-export default defineConfig({
-  schema: 'prisma/schema.prisma',
-  datasource: {
-    url: env('DIRECT_URL'),
-  },
-})
+export default {
+  schema: "prisma/schema.prisma",
+}

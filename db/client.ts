@@ -8,10 +8,13 @@ const globalForPrisma = globalThis as unknown as {
   pgPool?: Pool
 }
 
+const connectionString = process.env.DATABASE_URL
+if (!connectionString) throw new Error("DATABASE_URL is not set")
+
 const pool =
   globalForPrisma.pgPool ??
   new Pool({
-    connectionString: process.env.DATABASE_URL,
+    connectionString,
   })
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.pgPool = pool
