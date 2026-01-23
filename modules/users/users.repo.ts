@@ -2,7 +2,7 @@
 import "server-only"
 
 import { prisma } from "@/lib/prisma"
-import type { AppUser, Prisma } from "../../prisma/generated/client"
+import type { AppUser, Prisma } from "@prisma/client"
 
 type Db = Prisma.TransactionClient | typeof prisma
 
@@ -23,17 +23,6 @@ export const usersRepo = {
     const existing = await db.appUser.findUnique({ where: { clerkUserId } })
     if (existing) return existing
     return db.appUser.create({ data: { clerkUserId } })
-  },
-
-  async setSuperAdmin(
-    clerkUserId: string,
-    isSuperAdmin: boolean,
-    db: Db = prisma
-  ): Promise<AppUser> {
-    return db.appUser.upsert({
-      where: { clerkUserId },
-      create: { clerkUserId, isSuperAdmin },
-      update: { isSuperAdmin },
-    })
-  },
+  }
 }
+

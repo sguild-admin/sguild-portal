@@ -2291,7 +2291,6 @@ export namespace Prisma {
   export type AppUserMinAggregateOutputType = {
     id: string | null
     clerkUserId: string | null
-    isSuperAdmin: boolean | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -2299,7 +2298,6 @@ export namespace Prisma {
   export type AppUserMaxAggregateOutputType = {
     id: string | null
     clerkUserId: string | null
-    isSuperAdmin: boolean | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -2307,7 +2305,6 @@ export namespace Prisma {
   export type AppUserCountAggregateOutputType = {
     id: number
     clerkUserId: number
-    isSuperAdmin: number
     createdAt: number
     updatedAt: number
     _all: number
@@ -2317,7 +2314,6 @@ export namespace Prisma {
   export type AppUserMinAggregateInputType = {
     id?: true
     clerkUserId?: true
-    isSuperAdmin?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -2325,7 +2321,6 @@ export namespace Prisma {
   export type AppUserMaxAggregateInputType = {
     id?: true
     clerkUserId?: true
-    isSuperAdmin?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -2333,7 +2328,6 @@ export namespace Prisma {
   export type AppUserCountAggregateInputType = {
     id?: true
     clerkUserId?: true
-    isSuperAdmin?: true
     createdAt?: true
     updatedAt?: true
     _all?: true
@@ -2414,7 +2408,6 @@ export namespace Prisma {
   export type AppUserGroupByOutputType = {
     id: string
     clerkUserId: string
-    isSuperAdmin: boolean
     createdAt: Date
     updatedAt: Date
     _count: AppUserCountAggregateOutputType | null
@@ -2439,7 +2432,6 @@ export namespace Prisma {
   export type AppUserSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     clerkUserId?: boolean
-    isSuperAdmin?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }, ExtArgs["result"]["appUser"]>
@@ -2447,7 +2439,6 @@ export namespace Prisma {
   export type AppUserSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     clerkUserId?: boolean
-    isSuperAdmin?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }, ExtArgs["result"]["appUser"]>
@@ -2455,7 +2446,6 @@ export namespace Prisma {
   export type AppUserSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     clerkUserId?: boolean
-    isSuperAdmin?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }, ExtArgs["result"]["appUser"]>
@@ -2463,12 +2453,11 @@ export namespace Prisma {
   export type AppUserSelectScalar = {
     id?: boolean
     clerkUserId?: boolean
-    isSuperAdmin?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
 
-  export type AppUserOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "clerkUserId" | "isSuperAdmin" | "createdAt" | "updatedAt", ExtArgs["result"]["appUser"]>
+  export type AppUserOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "clerkUserId" | "createdAt" | "updatedAt", ExtArgs["result"]["appUser"]>
 
   export type $AppUserPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "AppUser"
@@ -2476,7 +2465,6 @@ export namespace Prisma {
     scalars: $Extensions.GetPayloadResult<{
       id: string
       clerkUserId: string
-      isSuperAdmin: boolean
       createdAt: Date
       updatedAt: Date
     }, ExtArgs["result"]["appUser"]>
@@ -2904,7 +2892,6 @@ export namespace Prisma {
   interface AppUserFieldRefs {
     readonly id: FieldRef<"AppUser", 'String'>
     readonly clerkUserId: FieldRef<"AppUser", 'String'>
-    readonly isSuperAdmin: FieldRef<"AppUser", 'Boolean'>
     readonly createdAt: FieldRef<"AppUser", 'DateTime'>
     readonly updatedAt: FieldRef<"AppUser", 'DateTime'>
   }
@@ -5420,7 +5407,6 @@ export namespace Prisma {
   export const AppUserScalarFieldEnum: {
     id: 'id',
     clerkUserId: 'clerkUserId',
-    isSuperAdmin: 'isSuperAdmin',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
   };
@@ -5509,13 +5495,6 @@ export namespace Prisma {
    * Reference to a field of type 'DateTime[]'
    */
   export type ListDateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime[]'>
-    
-
-
-  /**
-   * Reference to a field of type 'Boolean'
-   */
-  export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
     
 
 
@@ -5630,7 +5609,6 @@ export namespace Prisma {
     NOT?: AppUserWhereInput | AppUserWhereInput[]
     id?: UuidFilter<"AppUser"> | string
     clerkUserId?: StringFilter<"AppUser"> | string
-    isSuperAdmin?: BoolFilter<"AppUser"> | boolean
     createdAt?: DateTimeFilter<"AppUser"> | Date | string
     updatedAt?: DateTimeFilter<"AppUser"> | Date | string
   }
@@ -5638,7 +5616,6 @@ export namespace Prisma {
   export type AppUserOrderByWithRelationInput = {
     id?: SortOrder
     clerkUserId?: SortOrder
-    isSuperAdmin?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -5649,7 +5626,6 @@ export namespace Prisma {
     AND?: AppUserWhereInput | AppUserWhereInput[]
     OR?: AppUserWhereInput[]
     NOT?: AppUserWhereInput | AppUserWhereInput[]
-    isSuperAdmin?: BoolFilter<"AppUser"> | boolean
     createdAt?: DateTimeFilter<"AppUser"> | Date | string
     updatedAt?: DateTimeFilter<"AppUser"> | Date | string
   }, "id" | "clerkUserId">
@@ -5657,7 +5633,6 @@ export namespace Prisma {
   export type AppUserOrderByWithAggregationInput = {
     id?: SortOrder
     clerkUserId?: SortOrder
-    isSuperAdmin?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     _count?: AppUserCountOrderByAggregateInput
@@ -5671,7 +5646,6 @@ export namespace Prisma {
     NOT?: AppUserScalarWhereWithAggregatesInput | AppUserScalarWhereWithAggregatesInput[]
     id?: UuidWithAggregatesFilter<"AppUser"> | string
     clerkUserId?: StringWithAggregatesFilter<"AppUser"> | string
-    isSuperAdmin?: BoolWithAggregatesFilter<"AppUser"> | boolean
     createdAt?: DateTimeWithAggregatesFilter<"AppUser"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"AppUser"> | Date | string
   }
@@ -5880,7 +5854,6 @@ export namespace Prisma {
   export type AppUserCreateInput = {
     id?: string
     clerkUserId: string
-    isSuperAdmin?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -5888,7 +5861,6 @@ export namespace Prisma {
   export type AppUserUncheckedCreateInput = {
     id?: string
     clerkUserId: string
-    isSuperAdmin?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -5896,7 +5868,6 @@ export namespace Prisma {
   export type AppUserUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
     clerkUserId?: StringFieldUpdateOperationsInput | string
-    isSuperAdmin?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -5904,7 +5875,6 @@ export namespace Prisma {
   export type AppUserUncheckedUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
     clerkUserId?: StringFieldUpdateOperationsInput | string
-    isSuperAdmin?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -5912,7 +5882,6 @@ export namespace Prisma {
   export type AppUserCreateManyInput = {
     id?: string
     clerkUserId: string
-    isSuperAdmin?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -5920,7 +5889,6 @@ export namespace Prisma {
   export type AppUserUpdateManyMutationInput = {
     id?: StringFieldUpdateOperationsInput | string
     clerkUserId?: StringFieldUpdateOperationsInput | string
-    isSuperAdmin?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -5928,7 +5896,6 @@ export namespace Prisma {
   export type AppUserUncheckedUpdateManyInput = {
     id?: StringFieldUpdateOperationsInput | string
     clerkUserId?: StringFieldUpdateOperationsInput | string
-    isSuperAdmin?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -6239,15 +6206,9 @@ export namespace Prisma {
     _max?: NestedDateTimeFilter<$PrismaModel>
   }
 
-  export type BoolFilter<$PrismaModel = never> = {
-    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
-    not?: NestedBoolFilter<$PrismaModel> | boolean
-  }
-
   export type AppUserCountOrderByAggregateInput = {
     id?: SortOrder
     clerkUserId?: SortOrder
-    isSuperAdmin?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -6255,7 +6216,6 @@ export namespace Prisma {
   export type AppUserMaxOrderByAggregateInput = {
     id?: SortOrder
     clerkUserId?: SortOrder
-    isSuperAdmin?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -6263,17 +6223,8 @@ export namespace Prisma {
   export type AppUserMinOrderByAggregateInput = {
     id?: SortOrder
     clerkUserId?: SortOrder
-    isSuperAdmin?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
-  }
-
-  export type BoolWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
-    not?: NestedBoolWithAggregatesFilter<$PrismaModel> | boolean
-    _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedBoolFilter<$PrismaModel>
-    _max?: NestedBoolFilter<$PrismaModel>
   }
 
   export type EnumOrgRoleFilter<$PrismaModel = never> = {
@@ -6467,10 +6418,6 @@ export namespace Prisma {
     deleteMany?: OrgMembershipScalarWhereInput | OrgMembershipScalarWhereInput[]
   }
 
-  export type BoolFieldUpdateOperationsInput = {
-    set?: boolean
-  }
-
   export type OrganizationCreateNestedOneWithoutMembersInput = {
     create?: XOR<OrganizationCreateWithoutMembersInput, OrganizationUncheckedCreateWithoutMembersInput>
     connectOrCreate?: OrganizationCreateOrConnectWithoutMembersInput
@@ -6629,19 +6576,6 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedDateTimeFilter<$PrismaModel>
     _max?: NestedDateTimeFilter<$PrismaModel>
-  }
-
-  export type NestedBoolFilter<$PrismaModel = never> = {
-    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
-    not?: NestedBoolFilter<$PrismaModel> | boolean
-  }
-
-  export type NestedBoolWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
-    not?: NestedBoolWithAggregatesFilter<$PrismaModel> | boolean
-    _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedBoolFilter<$PrismaModel>
-    _max?: NestedBoolFilter<$PrismaModel>
   }
 
   export type NestedEnumOrgRoleFilter<$PrismaModel = never> = {

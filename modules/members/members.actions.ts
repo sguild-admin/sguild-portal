@@ -1,10 +1,9 @@
 // modules/members/members.actions.ts
 import "server-only"
 
-import { MembershipStatus, OrgRole } from "../../prisma/generated/client"
+import { MembershipStatus, OrgRole } from "@prisma/client"
 import { authzService, HttpError } from "@/modules/authz/authz.service"
 import { membersService } from "@/modules/members/members.service"
-import { usersService } from "@/modules/users/users.service"
 import { ListMembersQuerySchema, PatchMemberBodySchema } from "./members.schema"
 import { toMemberDTO } from "./members.dto"
 
@@ -36,21 +35,10 @@ export async function listMembersAction(request: Request) {
 }
 
 export async function getMeAction() {
-  const { clerkUserId } = await authzService.requireUserId()
-  const user = await usersService.getOrCreateByClerkUserId(clerkUserId)
-
-  if (user.isSuperAdmin) {
-    return {
-      org: null,
-      mode: "superadmin" as const,
-      membership: null,
-    }
-  }
-
-  const access = await authzService.requireOrgAccess({ allowSuperAdmin: false })
+  await authzService.requireUserId()
+  const access = await authzService.requireOrgAccess()
   return {
     org: { id: access.org.id, clerkOrgId: access.org.clerkOrgId, name: access.org.name },
-    mode: access.mode,
     membership: access.membership,
   }
 }

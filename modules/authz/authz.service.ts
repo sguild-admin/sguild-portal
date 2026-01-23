@@ -2,12 +2,11 @@
 import "server-only"
 
 import { auth } from "@clerk/nextjs/server"
-import type { AppUser, Organization, OrgMembership } from "../../prisma/generated/client"
-import { MembershipStatus, OrgRole } from "../../prisma/generated/client"
+import type { AppUser, Organization, OrgMembership } from "@prisma/client"
+import { MembershipStatus, OrgRole } from "@prisma/client"
 
 import { orgService } from "@/modules/org/org.service"
 import { membersService } from "@/modules/members/members.service"
-import { usersService } from "@/modules/users/users.service"
 import { HttpError } from "@/modules/_shared/errors"
 
 type ClerkContext = {
@@ -21,8 +20,7 @@ export type AuthzOrgAccess = {
   clerkUserId: string
   clerkOrgId: string
   org: Organization
-  membership: OrgMembership | null
-  mode: "member" | "superadmin"
+  membership: OrgMembership
 }
 
 async function getClerkContext(): Promise<ClerkContext> {
@@ -35,14 +33,6 @@ async function getClerkContext(): Promise<ClerkContext> {
   return {
     clerkUserId: a.userId,
     clerkOrgId: a.orgId ?? null,
-  }
-}
-
-async function getSuperAdminUser(clerkUserId: string): Promise<AppUser | null> {
-  try {
-    return await usersService.getOrCreateByClerkUserId(clerkUserId)
-  } catch {
-    return null
   }
 }
 
@@ -77,16 +67,6 @@ export const authzService = {
     return { clerkUserId: ctx.clerkUserId }
   },
 
-  // NEW: app-level super admin, no org required
-  async requireSuperAdmin(): Promise<{ clerkUserId: string; user: AppUser }> {
-    const { clerkUserId } = await this.requireUserId()
-    const user = await usersService.getOrCreateByClerkUserId(clerkUserId)
-    if (!user.isSuperAdmin) {
-      throw new HttpError(403, "FORBIDDEN", "Super admin required")
-    }
-    return { clerkUserId, user }
-  },
-
   async requireOrgId(): Promise<{ clerkUserId: string; clerkOrgId: string }> {
     const ctx = await getClerkContext()
     if (!ctx.clerkOrgId) {
@@ -95,29 +75,18 @@ export const authzService = {
     return { clerkUserId: ctx.clerkUserId, clerkOrgId: ctx.clerkOrgId }
   },
 
-  async requireOrgAccess(input?: {
-    roles?: OrgRole[]
-    allowSuperAdmin?: boolean
-  }): Promise<AuthzOrgAccess> {
+  async requireOrgAccess(input?: { roles?: OrgRole[] }): Promise<AuthzOrgAccess> {
     const { clerkUserId, clerkOrgId } = await this.requireOrgId()
 
-    const allowSuperAdmin = input?.allowSuperAdmin ?? true
     const roles = input?.roles
 
     const org = await orgService.getOrCreateByClerkOrgId(clerkOrgId)
-
-    if (allowSuperAdmin) {
-      const appUser = await getSuperAdminUser(clerkUserId)
-      if (appUser?.isSuperAdmin) {
-        return { clerkUserId, clerkOrgId, org, membership: null, mode: "superadmin" }
-      }
-    }
 
     const membership = await membersService.getByOrgAndClerkUserId(org.id, clerkUserId)
     assertActiveMembership(membership)
     if (roles?.length) assertRole(membership, roles)
 
-    return { clerkUserId, clerkOrgId, org, membership, mode: "member" }
+    return { clerkUserId, clerkOrgId, org, membership }
   },
 
   async requireAdmin(): Promise<AuthzOrgAccess> {

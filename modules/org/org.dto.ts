@@ -1,5 +1,5 @@
 // modules/org/org.dto.ts
-import type { Organization } from "../../prisma/generated/client"
+import type { Organization } from "@prisma/client"
 
 export type OrgDTO = {
   id: string

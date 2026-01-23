@@ -132,7 +132,6 @@ exports.Prisma.OrganizationScalarFieldEnum = {
 exports.Prisma.AppUserScalarFieldEnum = {
   id: 'id',
   clerkUserId: 'clerkUserId',
-  isSuperAdmin: 'isSuperAdmin',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };

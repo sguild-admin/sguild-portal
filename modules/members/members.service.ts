@@ -1,8 +1,8 @@
 // modules/members/members.service.ts
 import "server-only"
 
-import type { OrgMembership } from "../../prisma/generated/client"
-import { MembershipStatus, OrgRole } from "../../prisma/generated/client"
+import type { OrgMembership } from "@prisma/client"
+import { MembershipStatus, OrgRole } from "@prisma/client"
 import { membersRepo, type UpsertMembershipInput } from "@/modules/members/members.repo"
 
 export type ClerkMembershipSyncInput =

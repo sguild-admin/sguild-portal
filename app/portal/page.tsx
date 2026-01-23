@@ -11,10 +11,6 @@ export default async function Page() {
     throw new Error(me.message)
   }
 
-  if (me.mode === "superadmin") {
-    redirect("/portal/superadmin")
-  }
-
   if (me.membership?.role === "ADMIN") {
     redirect("/portal/admin")
   }

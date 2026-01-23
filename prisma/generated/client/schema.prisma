@@ -20,11 +20,10 @@ model Organization {
 }
 
 model AppUser {
-  id           String   @id @default(uuid()) @db.Uuid
-  clerkUserId  String   @unique
-  isSuperAdmin Boolean  @default(false)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id          String   @id @default(uuid()) @db.Uuid
+  clerkUserId String   @unique
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model OrgMembership {

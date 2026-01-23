@@ -1,11 +1,10 @@
-import { cache } from "react"
+// app/portal/_lib/members-me.ts
 import { cookies, headers } from "next/headers"
 
 export type MembersMeOk = {
   ok: true
-  mode: "member" | "superadmin"
-  org: { id: string; clerkOrgId: string; name: string } | null
-  membership: { role: string } | null
+  org: { id: string; clerkOrgId: string; name: string }
+  membership: { role: string }
 }
 
 export type MembersMeError = {
@@ -21,19 +20,22 @@ export type MembersMeResponse = MembersMeOk | MembersMeError
 
 async function getBaseUrl() {
   const h = await headers()
-  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000"
-  const proto = h.get("x-forwarded-proto") ?? "http"
+  const host = h.get("x-forwarded-host") ?? h.get("host")
+  const proto = h.get("x-forwarded-proto") ?? "https"
+  if (!host) throw new Error("Missing host header")
   return `${proto}://${host}`
 }
 
-export const getMembersMe = cache(async (): Promise<MembersMeResponse> => {
+export async function getMembersMe(): Promise<MembersMeResponse> {
   const baseUrl = await getBaseUrl()
+  const cookieStore = await cookies()
+
   const res = await fetch(`${baseUrl}/api/members/me`, {
     cache: "no-store",
     headers: {
-      cookie: cookies().toString(),
+      cookie: cookieStore.toString(),
     },
   })
 
   return (await res.json()) as MembersMeResponse
-})
+}

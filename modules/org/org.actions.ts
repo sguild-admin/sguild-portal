@@ -7,10 +7,9 @@ import { SetPrimaryAdminBodySchema } from "./org.schema"
 import { toOrgDTO } from "./org.dto"
 
 export async function getMyOrgAction() {
-  const access = await authzService.requireOrgAccess({ allowSuperAdmin: true })
+  const access = await authzService.requireOrgAccess()
 
   return {
-    mode: access.mode,
     org: toOrgDTO(access.org),
     membership: access.membership,
   }
