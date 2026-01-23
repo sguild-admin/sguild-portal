@@ -23,7 +23,6 @@ export async function requireClerkOrgId() {
   return a.orgId
 }
  
-
 export async function verifyClerkWebhook(request: Request): Promise<unknown> {
   const secret = env.CLERK_WEBHOOK_SECRET
   if (!secret) throw new BadRequestError("CLERK_WEBHOOK_SECRET is not set")
@@ -39,7 +38,6 @@ export async function verifyClerkWebhook(request: Request): Promise<unknown> {
 
   const body = await request.text()
 
-
   const { Webhook } = await import("svix")
 
   const wh = new Webhook(secret)
@@ -49,4 +47,3 @@ export async function verifyClerkWebhook(request: Request): Promise<unknown> {
     "svix-signature": svixSignature,
   })
 }
-
