@@ -1,44 +1,41 @@
-## Copilot / AI Agent Instructions — Sguild
+Sguild app AI instructions
 
-Purpose: quickly orient AI coding agents to be productive in this Next.js + Prisma + Clerk app.
+## Big picture
+- Next.js App Router with Clerk auth and Prisma Postgres. UI and API entrypoints live in app/ only.
+- All server side business logic lives in modules/ by domain, including server actions and webhooks.
+- Multi tenant by organization. All org owned data access must be scoped by internal orgId.
 
-Overview
-- This repo uses the Next.js App Router in `app/`, Clerk for authentication, and Prisma (Postgres) for persistence. The app is multi-tenant by organization and uses role-based access control: super admin (global), org admin (per org), coach (per org).
+## Folder responsibilities
+- app/ renders UI and re exports module route handlers from app/api/**/route.ts.
+- modules/ owns all backend logic and contracts per domain.
+- lib/ contains infra helpers like Prisma and Clerk utilities.
 
-Recommended architecture (pragmatic Clean Architecture)
-- Interface layer: `app/`, `middleware.ts` — pages, layouts, server actions (`actions.ts`), route handlers (`route.ts`), and webhooks. Responsibilities: parse input, call use cases, return UI or HTTP responses. Allowed: server actions here. Forbidden: direct Prisma access.
-- Application layer (use cases): `modules/**/*.usecases.ts` — authorization rules, validation, orchestration. Depends on repositories (interfaces) and domain types. Forbidden: Next.js-specific Request/Response objects.
-- Infrastructure layer (repositories/adapters): `modules/**/*.repo.ts`, `lib/` — implement persistence (Prisma) and vendor adapters (Clerk, svix). Repos must not enforce authorization policy.
+## Module file layout and roles
+- Use only these filenames per module: <module>.routes.ts, <module>.actions.ts, <module>.service.ts, <module>.repo.ts, <module>.schema.ts, <module>.dto.ts, index.ts.
+- routes.ts parses Request and returns Response.json. No Prisma or business logic.
+- actions.ts owns orchestration, authz, Zod validation, DTO mapping, and server actions. Return DTOs only.
+- service.ts holds domain rules and transitions. No Request, Response, or auth reads.
+- repo.ts is Prisma only. No authz or validation. Accept Prisma.TransactionClient for transactions.
 
-Auth & data model
-- Clerk is the source of truth for sign-in and org context (`userId`, `orgId`). DB mirrors organizations and memberships (see `prisma/schema.prisma`): `Organization`, `AppUser`, `OrgMembership`. Use `lib/clerk.ts` helpers: `getClerkAuth()`, `requireClerkUserId()`, `requireClerkOrgId()`, `verifyClerkWebhook(request)` (dynamic `svix` import).
-- Roles: Super admin (`AppUser.isSuperAdmin`), Org admin (`OrgMembership.role = ADMIN` + `status = ACTIVE`), Coach (`COACH` + `ACTIVE`). Always validate both role and `status` when authorizing.
+## Auth and tenancy
+- Centralize permission checks in modules/authz/authz.service.ts. Actions call authzService helpers.
+- Clerk helpers live in lib/clerk.ts, including requireClerkUserId and requireClerkOrgId.
 
-Module layout examples (follow these when adding features)
-- `modules/auth/` — `auth.usecases.ts`, `auth.repo.ts` (actor builds and guards).
-- `modules/org/` — `org.usecases.ts`, `org.repo.ts` (org workflows & persistence).
-- `modules/memberships/` — `memberships.usecases.ts`, `memberships.repo.ts`.
+## Webhooks
+- app/api/webhooks/clerk/route.ts re exports handlers from modules/webhooks.
+- webhooks.routes.ts verifies signatures then delegates to webhooks.actions.ts.
+- Wrap side effects with idempotencyService.runOnce keyed by provider and eventId.
 
-Developer workflows
-- Dev server: `npm run dev`.
-- Migrations (dev): `npx prisma migrate dev --name <name>`.
-- Migrations (prod): `npx prisma migrate deploy`.
-- Generate client: `npx prisma generate`.
+## API and exports
+- app/api/**/route.ts files only re export module handlers. No logic in app/api.
+- module index.ts exports routes and actions. Export dto or schema only if needed by UI.
 
-Environment
-- Required envs (validated in `lib/env.ts`): `DATABASE_URL`, `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`.
-- Optional: `CLERK_WEBHOOK_SECRET`, `DATABASE_URL_POOLER`.
-
-Code patterns & rules (non-negotiable)
-- `app/*` must call only `modules/*/*.usecases.ts` (never call repos directly).
-- `*.usecases.ts` may call repos and adapters.
-- `*.repo.ts` must be DB-only and must accept `orgId` for org-scoped queries.
-- Keep webhooks thin: handlers call `verifyClerkWebhook()` then delegate to a use case.
-- Do not statically import `svix`; dynamic import prevents crashes when not installed.
-
-Common pitfalls & search tips
-- Two Prisma clients exist: prefer `lib/prisma.ts` but check for `db/client.ts` usages before refactoring.
-- Missing env vars cause startup errors; consult `lib/env.ts`.
-- Search: `requireClerkUserId(`, `requireClerkOrgId(`, `verifyClerkWebhook(`, `prisma.`.
-
-If you want, I can expand this with concrete examples (server action → use case → repo), or produce a small checklist for converting direct Prisma calls into repository implementations.
+## Schema change workflow
+1) Update prisma/schema.prisma
+2) Create migration
+3) Update repo methods
+4) Update services
+5) Update schemas and DTOs
+6) Update actions
+7) Update routes
+8) Update webhooks and authz if behavior or permissions change
