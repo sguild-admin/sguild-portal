@@ -1,32 +1,22 @@
+// app/api/webhooks/clerk/route.ts
+export const runtime = "nodejs"
+
 import { verifyClerkWebhook } from "@/lib/clerk"
-import { syncFromClerkEvent as syncOrgEvent } from "@/modules/org/org.usecases"
-import { syncFromClerkEvent as syncMembershipEvent } from "@/modules/memberships/memberships.usecases"
+import { jsonError } from "@/lib/errors"
 
 export async function POST(request: Request) {
   try {
     const event = await verifyClerkWebhook(request)
 
-    let type = ""
-    const ev = event as unknown
-    if (typeof ev === "object" && ev !== null) {
-      const e = ev as Record<string, unknown>
-      if (typeof e.type === "string") type = e.type
-      else if (typeof e.event === "string") type = e.event
-    }
+    // TODO: call your org/membership sync use cases based on event.type
 
-    // route quickly and keep handlers thin — delegate to usecases
-    if (type) {
-      const t = type.toString().toLowerCase()
-      if (t.includes("organization") || t.includes("org")) {
-        // do not await so we can ack quickly
-        Promise.resolve(syncOrgEvent(event)).catch(() => {})
-      } else if (t.includes("membership")) {
-        Promise.resolve(syncMembershipEvent(event)).catch(() => {})
-      }
-    }
-
-    return new Response(null, { status: 200 })
-  } catch {
-    return new Response(null, { status: 400 })
+    return Response.json({ ok: true })
+  } catch (err) {
+    return jsonError(err)
   }
+}
+
+// optional: helps you sanity check in browser
+export async function GET() {
+  return Response.json({ ok: true })
 }
