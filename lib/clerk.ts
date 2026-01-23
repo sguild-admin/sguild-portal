@@ -42,8 +42,7 @@ export async function verifyClerkWebhook(request: Request): Promise<unknown> {
 
   const body = await request.text()
 
-  // Dynamic import so the app does not crash if svix is not installed yet
-  // @ts-expect-error - 'svix' may be optional; use dynamic import at runtime
+
   const { Webhook } = await import("svix")
 
   const wh = new Webhook(secret)
