@@ -1,6 +1,7 @@
 // modules/_shared/ctx.ts
-import { PrismaClient } from "@prisma/client"
+import type { PrismaClient } from "@prisma/client"
 import { auth, clerkClient } from "@clerk/nextjs/server"
+import { prisma } from "@/db/client"
 
 export type AuthInfo = {
   userId: string | null
@@ -34,15 +35,8 @@ export type AppCtx = {
   now: () => Date
 }
 
-declare global {
-  // eslint-disable-next-line no-var
-  var __prisma: PrismaClient | undefined
-}
-
 function getPrisma(): PrismaClient {
-  if (process.env.NODE_ENV === "production") return new PrismaClient()
-  if (!globalThis.__prisma) globalThis.__prisma = new PrismaClient()
-  return globalThis.__prisma
+  return prisma
 }
 
 function getHeader(req: Request, key: string): string | null {
