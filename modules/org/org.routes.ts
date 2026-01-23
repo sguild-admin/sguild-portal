@@ -1,7 +1,7 @@
 // modules/org/org.routes.ts
 import "server-only"
 
-import { jsonError } from "@/lib/errors"
+import { jsonErrorResponse } from "@/modules/_shared/errors"
 import { getMyOrgAction, setPrimaryAdminAction } from "./org.actions"
 
 export const orgRoutes = {
@@ -11,7 +11,7 @@ export const orgRoutes = {
       const dto = await getMyOrgAction()
       return Response.json({ ok: true, ...dto })
     } catch (err) {
-      return jsonError(err)
+      return jsonErrorResponse(err)
     }
   },
 
@@ -22,7 +22,7 @@ export const orgRoutes = {
       const dto = await setPrimaryAdminAction(body)
       return Response.json({ ok: true, ...dto })
     } catch (err) {
-      return jsonError(err)
+      return jsonErrorResponse(err)
     }
   },
 }

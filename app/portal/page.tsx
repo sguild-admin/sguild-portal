@@ -1,12 +1,23 @@
-import { UserButton } from "@clerk/nextjs"
+import { redirect } from "next/navigation"
+import { getMembersMe } from "@/app/portal/_lib/members-me"
 
-export default function Page() {
-  return (
-    <main className="p-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Portal</h1>
-        <UserButton />
-      </div>
-    </main>
-  )
+export default async function Page() {
+  const me = await getMembersMe()
+
+  if (!me.ok) {
+    if (me.code === "NO_ACTIVE_ORG") return null
+    if (me.code === "UNAUTHENTICATED") redirect("/sign-in")
+
+    throw new Error(me.message)
+  }
+
+  if (me.mode === "superadmin") {
+    redirect("/portal/superadmin")
+  }
+
+  if (me.membership?.role === "ADMIN") {
+    redirect("/portal/admin")
+  }
+
+  redirect("/portal/coach")
 }

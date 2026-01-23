@@ -8,24 +8,14 @@ import { MembershipStatus, OrgRole } from "@prisma/client"
 import { orgService } from "@/modules/org/org.service"
 import { membersService } from "@/modules/members/members.service"
 import { usersService } from "@/modules/users/users.service"
+import { HttpError } from "@/modules/_shared/errors"
 
 type ClerkContext = {
   clerkUserId: string
   clerkOrgId: string | null
 }
 
-export class HttpError extends Error {
-  status: number
-  code: string
-  details?: unknown
-
-  constructor(status: number, code: string, message: string, details?: unknown) {
-    super(message)
-    this.status = status
-    this.code = code
-    this.details = details
-  }
-}
+export { HttpError }
 
 export type AuthzOrgAccess = {
   clerkUserId: string

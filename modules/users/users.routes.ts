@@ -1,7 +1,7 @@
 // modules/users/users.routes.ts
 import "server-only"
 
-import { jsonError } from "@/lib/errors"
+import { jsonErrorResponse } from "@/modules/_shared/errors"
 import { getMyUserAction } from "@/modules/users/users.actions"
 
 export const usersRoutes = {
@@ -11,7 +11,7 @@ export const usersRoutes = {
       const dto = await getMyUserAction()
       return Response.json({ ok: true, ...dto })
     } catch (err) {
-      return jsonError(err)
+      return jsonErrorResponse(err)
     }
   },
 }

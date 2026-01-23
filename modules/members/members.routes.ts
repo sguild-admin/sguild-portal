@@ -2,7 +2,7 @@
 import "server-only"
 
 import type { NextRequest } from "next/server"
-import { jsonError } from "@/lib/errors"
+import { jsonErrorResponse } from "@/modules/_shared/errors"
 import {
   listMembersAction,
   getMeAction,
@@ -18,7 +18,7 @@ export const GET_members = async (request: NextRequest) => {
     const dto = await listMembersAction(request)
     return Response.json({ ok: true, ...dto })
   } catch (err) {
-    return jsonError(err)
+    return jsonErrorResponse(err)
   }
 }
 
@@ -28,7 +28,7 @@ export const GET_me = async () => {
     const dto = await getMeAction()
     return Response.json({ ok: true, ...dto })
   } catch (err) {
-    return jsonError(err)
+    return jsonErrorResponse(err)
   }
 }
 
@@ -39,7 +39,7 @@ export const GET_byClerkUserId = async (_request: NextRequest, ctx: Ctx<{ clerkU
     const dto = await getMemberByClerkUserIdAction(clerkUserId)
     return Response.json({ ok: true, ...dto })
   } catch (err) {
-    return jsonError(err)
+    return jsonErrorResponse(err)
   }
 }
 
@@ -54,6 +54,6 @@ export const PATCH_byClerkUserId = async (
     const dto = await patchMemberByClerkUserIdAction(clerkUserId, body)
     return Response.json({ ok: true, ...dto })
   } catch (err) {
-    return jsonError(err)
+    return jsonErrorResponse(err)
   }
 }
