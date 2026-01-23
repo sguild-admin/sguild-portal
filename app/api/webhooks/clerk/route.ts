@@ -4,16 +4,8 @@ export const runtime = "nodejs"
 import { verifyClerkWebhook } from "@/lib/clerk"
 import { jsonError } from "@/lib/errors"
 
-export async function POST(request: Request) {
-  try {
-    const event = await verifyClerkWebhook(request)
-
-    // TODO: call your org/membership sync use cases based on event.type
-
-    return Response.json({ ok: true })
-  } catch (err) {
-    return jsonError(err)
-  }
+export async function POST() {
+  return Response.json({ ok: true })
 }
 
 // optional: helps you sanity check in browser
