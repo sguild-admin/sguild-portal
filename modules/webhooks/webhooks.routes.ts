@@ -1,9 +1,9 @@
 // modules/webhooks/webhooks.routes.ts
 import "server-only"
 
-import { verifyClerkWebhook, extractMembership, extractOrganization } from "@/modules/webhooks/clerk.webhooks"
-import { orgService } from "@/modules/org/org.service"
-import { membersService } from "@/modules/members/members.service"
+import { verifyClerkWebhook } from "@/modules/webhooks/clerk.webhooks"
+import { buildCtx } from "@/modules/_shared/ctx"
+import { handleClerkEventAction } from "@/modules/webhooks/webhooks.actions"
 import { jsonError } from "@/lib/errors"
 
 function getEventCreatedAtFromSvix(request: Request): Date {
@@ -21,30 +21,13 @@ export const webhooksRoutes = {
       const evt = await verifyClerkWebhook(request)
       const eventCreatedAt = getEventCreatedAtFromSvix(request)
 
-      const org = extractOrganization(evt)
-      if (org?.clerkOrgId) {
-        await orgService.upsertFromClerk({
-          clerkOrgId: org.clerkOrgId,
-          name: org.name ?? "Organization",
-        })
-        return Response.json({ ok: true })
-      }
+      const ctx = await buildCtx(request)
 
-      const mem = extractMembership(evt)
-      if (mem?.clerkOrgId && mem.clerkUserId) {
-        const dbOrg = await orgService.getOrCreateByClerkOrgId(mem.clerkOrgId)
-
-        await membersService.syncFromClerkMembership({
-          action: evt.type.endsWith(".deleted") ? "delete" : "upsert",
-          orgId: dbOrg.id,
-          clerkUserId: mem.clerkUserId,
-          clerkRole: mem.clerkRole ?? null,
-          clerkStatus: mem.statusHint ?? null,
-          eventCreatedAt,
-        })
-
-        return Response.json({ ok: true })
-      }
+      await handleClerkEventAction({
+        ctx,
+        event: { id: (evt as any).id, type: (evt as any).type, data: (evt as any).data },
+        eventCreatedAt,
+      })
 
       return Response.json({ ok: true })
     } catch (err) {

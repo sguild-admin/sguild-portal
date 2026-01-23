@@ -5,4 +5,3 @@ import { webhooksRoutes } from "@/modules/webhooks/webhooks.routes"
 
 export const POST = webhooksRoutes.clerk
 export const GET = webhooksRoutes.health
-export const OPTIONS = webhooksRoutes.options

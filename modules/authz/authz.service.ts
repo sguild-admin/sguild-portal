@@ -48,7 +48,7 @@ async function getClerkContext(): Promise<ClerkContext> {
   }
 }
 
-async function getSuperAdmin(clerkUserId: string): Promise<AppUser | null> {
+async function getSuperAdminUser(clerkUserId: string): Promise<AppUser | null> {
   try {
     return await usersService.getOrCreateByClerkUserId(clerkUserId)
   } catch {
@@ -81,6 +81,22 @@ export const authzService = {
     return getClerkContext()
   },
 
+  // NEW: signed-in only, no org required
+  async requireUserId(): Promise<{ clerkUserId: string }> {
+    const ctx = await getClerkContext()
+    return { clerkUserId: ctx.clerkUserId }
+  },
+
+  // NEW: app-level super admin, no org required
+  async requireSuperAdmin(): Promise<{ clerkUserId: string; user: AppUser }> {
+    const { clerkUserId } = await this.requireUserId()
+    const user = await usersService.getOrCreateByClerkUserId(clerkUserId)
+    if (!user.isSuperAdmin) {
+      throw new HttpError(403, "FORBIDDEN", "Super admin required")
+    }
+    return { clerkUserId, user }
+  },
+
   async requireOrgId(): Promise<{ clerkUserId: string; clerkOrgId: string }> {
     const ctx = await getClerkContext()
     if (!ctx.clerkOrgId) {
@@ -101,7 +117,7 @@ export const authzService = {
     const org = await orgService.getOrCreateByClerkOrgId(clerkOrgId)
 
     if (allowSuperAdmin) {
-      const appUser = await getSuperAdmin(clerkUserId)
+      const appUser = await getSuperAdminUser(clerkUserId)
       if (appUser?.isSuperAdmin) {
         return { clerkUserId, clerkOrgId, org, membership: null, mode: "superadmin" }
       }

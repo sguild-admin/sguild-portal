@@ -3,34 +3,56 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
+  provider = "postgresql"
 }
 
 model Organization {
-  id         String   @id @default(uuid()) @db.Uuid
-  clerkOrgId String   @unique @db.Text
-  name       String   @db.Text
-
-  // optional: enforce “one main admin” at the org record
-  primaryAdminClerkUserId String? @db.Text
-
-  members    OrgMembership[]
-
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id                      String          @id @default(uuid()) @db.Uuid
+  clerkOrgId              String          @unique
+  name                    String
+  primaryAdminClerkUserId String?
+  createdAt               DateTime        @default(now())
+  updatedAt               DateTime        @updatedAt
+  members                 OrgMembership[]
 
   @@index([primaryAdminClerkUserId])
 }
 
 model AppUser {
-  id          String   @id @default(uuid()) @db.Uuid
-  clerkUserId String   @unique @db.Text
+  id           String   @id @default(uuid()) @db.Uuid
+  clerkUserId  String   @unique
+  isSuperAdmin Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
 
-  // global privilege not tied to any org
-  isSuperAdmin Boolean @default(false)
+model OrgMembership {
+  id          String           @id @default(uuid()) @db.Uuid
+  orgId       String           @db.Uuid
+  clerkUserId String
+  role        OrgRole
+  status      MembershipStatus @default(INVITED)
+  invitedAt   DateTime?
+  activatedAt DateTime?
+  disabledAt  DateTime?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  org         Organization     @relation(fields: [orgId], references: [id], onDelete: Cascade)
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  @@unique([orgId, clerkUserId])
+  @@index([clerkUserId])
+  @@index([orgId, role, status])
+}
+
+model WebhookEvent {
+  id          String    @id @default(uuid()) @db.Uuid
+  provider    String
+  eventId     String
+  receivedAt  DateTime  @default(now())
+  processedAt DateTime?
+
+  @@unique([provider, eventId])
+  @@index([provider, receivedAt])
 }
 
 enum OrgRole {
@@ -42,31 +64,4 @@ enum MembershipStatus {
   INVITED
   ACTIVE
   DISABLED
-}
-
-model OrgMembership {
-  id          String           @id @default(uuid()) @db.Uuid
-
-  orgId       String           @db.Uuid
-  org         Organization     @relation(fields: [orgId], references: [id], onDelete: Cascade)
-
-  // link to Clerk user identity
-  clerkUserId String           @db.Text
-
-  role        OrgRole
-  status      MembershipStatus @default(INVITED)
-
-  invitedAt   DateTime?
-  activatedAt DateTime?
-  disabledAt  DateTime?
-
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // a Clerk user can have only one membership per org in your DB
-  @@unique([orgId, clerkUserId])
-
-  // common query patterns
-  @@index([clerkUserId])
-  @@index([orgId, role, status])
 }

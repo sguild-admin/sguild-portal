@@ -1,3 +1,3 @@
 // app/api/org/me/route.ts
-import { orgRoutes } from "@/modules/org/org.routes"
+import { orgRoutes } from "@/modules/org"
 export const GET = orgRoutes.me
