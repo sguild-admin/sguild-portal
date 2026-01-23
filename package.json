@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "postinstall": "prisma generate",
-    "build": "prisma generate && next build",
+    "postinstall": "npx prisma generate",
+    "build": "npx prisma generate && next build",
     "start": "next start",
     "lint": "eslint"
   },
@@ -30,6 +30,6 @@
     "eslint-config-next": "16.1.4",
     "prisma": "^7.3.0",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5.2.2"
   }
 }
