@@ -1,17 +1,50 @@
+// modules/org/org.repo.ts
+import "server-only"
+
 import { prisma } from "@/lib/prisma"
+import type { Organization, Prisma } from "@prisma/client"
 
-export async function getOrganizationByClerkOrgId(clerkOrgId: string) {
-  return prisma.organization.findUnique({ where: { clerkOrgId } })
+type Db = Prisma.TransactionClient | typeof prisma
+
+export type UpsertOrgInput = {
+  clerkOrgId: string
+  name: string
+  primaryAdminClerkUserId?: string | null
 }
 
-export async function createOrganization(clerkOrgId: string, name: string) {
-  return prisma.organization.create({ data: { clerkOrgId, name } })
-}
+export const orgRepo = {
+  async getById(id: string, db: Db = prisma): Promise<Organization | null> {
+    return db.organization.findUnique({ where: { id } })
+  },
 
-export async function listOrganizations() {
-  return prisma.organization.findMany({ orderBy: { createdAt: "desc" } })
-}
+  async getByClerkOrgId(clerkOrgId: string, db: Db = prisma): Promise<Organization | null> {
+    return db.organization.findUnique({ where: { clerkOrgId } })
+  },
 
-export async function updateOrganizationByClerkOrgId(clerkOrgId: string, data: { name?: string; primaryAdminClerkUserId?: string }) {
-  return prisma.organization.updateMany({ where: { clerkOrgId }, data })
+  async upsertByClerkOrgId(input: UpsertOrgInput, db: Db = prisma): Promise<Organization> {
+    return db.organization.upsert({
+      where: { clerkOrgId: input.clerkOrgId },
+      create: {
+        clerkOrgId: input.clerkOrgId,
+        name: input.name,
+        primaryAdminClerkUserId: input.primaryAdminClerkUserId ?? null,
+      },
+      update: {
+        name: input.name,
+        primaryAdminClerkUserId:
+          input.primaryAdminClerkUserId === undefined ? undefined : input.primaryAdminClerkUserId,
+      },
+    })
+  },
+
+  async setPrimaryAdmin(
+    orgId: string,
+    clerkUserId: string | null,
+    db: Db = prisma
+  ): Promise<Organization> {
+    return db.organization.update({
+      where: { id: orgId },
+      data: { primaryAdminClerkUserId: clerkUserId },
+    })
+  },
 }
