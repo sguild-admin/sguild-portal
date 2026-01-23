@@ -22,7 +22,7 @@ export async function requireClerkOrgId() {
   if (!a.orgId) throw new UnauthorizedError("No active organization")
   return a.orgId
 }
-
+ 
 /**
  * Verify Clerk webhooks (Svix). Requires CLERK_WEBHOOK_SECRET and the `svix` package.
  * If you do not use webhooks yet, you can ignore this.
