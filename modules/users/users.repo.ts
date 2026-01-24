@@ -33,7 +33,6 @@ export const usersRepo = {
       lastName?: string | null
       displayName?: string | null
       phone?: string | null
-      avatarUrl?: string | null
       isDisabled?: boolean
       lastSignInAt?: Date | null
       lastSeenAt?: Date | null
@@ -49,7 +48,6 @@ export const usersRepo = {
         lastName: input.lastName ?? null,
         displayName: input.displayName ?? null,
         phone: input.phone ?? null,
-        avatarUrl: input.avatarUrl ?? null,
         isDisabled: input.isDisabled ?? false,
         lastSignInAt: input.lastSignInAt ?? null,
         lastSeenAt: input.lastSeenAt ?? null,
@@ -60,7 +58,6 @@ export const usersRepo = {
         lastName: input.lastName ?? undefined,
         displayName: input.displayName ?? undefined,
         phone: input.phone ?? undefined,
-        avatarUrl: input.avatarUrl ?? undefined,
         isDisabled: input.isDisabled ?? undefined,
         lastSignInAt: input.lastSignInAt ?? undefined,
         lastSeenAt: input.lastSeenAt ?? undefined,

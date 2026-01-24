@@ -48,7 +48,6 @@ export function extractUser(
   lastName?: string | null
   displayName?: string | null
   phone?: string | null
-  avatarUrl?: string | null
   lastSignInAt?: Date | null
   lastSeenAt?: Date | null
   isDisabled?: boolean
@@ -77,7 +76,6 @@ export function extractUser(
   const fullName = [firstName, lastName].filter(Boolean).join(" ").trim()
   const displayName = fullName || username || null
 
-  const avatarUrl = typeof data?.image_url === "string" ? data.image_url : null
   const lastSignInAt = typeof data?.last_sign_in_at === "number" ? new Date(data.last_sign_in_at) : null
   const lastSeenAt = typeof data?.last_active_at === "number" ? new Date(data.last_active_at) : null
 
@@ -90,7 +88,6 @@ export function extractUser(
     lastName,
     displayName,
     phone,
-    avatarUrl,
     lastSignInAt,
     lastSeenAt,
     isDisabled,

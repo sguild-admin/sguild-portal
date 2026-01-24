@@ -41,7 +41,6 @@ export const usersService = {
     lastName?: string | null
     displayName?: string | null
     phone?: string | null
-    avatarUrl?: string | null
     isDisabled?: boolean
     lastSignInAt?: Date | null
     lastSeenAt?: Date | null
@@ -62,7 +61,6 @@ export const usersService = {
         username: resource.username ?? null,
       }),
       phone: resource.primaryPhoneNumber?.phoneNumber ?? null,
-      avatarUrl: resource.imageUrl ?? null,
       lastSignInAt: typeof resource.lastSignInAt === "number" ? new Date(resource.lastSignInAt) : null,
       lastSeenAt: typeof resource.lastActiveAt === "number" ? new Date(resource.lastActiveAt) : null,
       isDisabled: !!(resource.banned || resource.locked),

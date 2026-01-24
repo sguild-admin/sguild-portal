@@ -9,7 +9,6 @@ export type AppUserDTO = {
   lastName: string | null
   displayName: string | null
   phone: string | null
-  avatarUrl: string | null
   isDisabled: boolean
   lastSignInAt: Date | null
   lastSeenAt: Date | null
@@ -26,7 +25,6 @@ export function toAppUserDTO(u: AppUser): AppUserDTO {
     lastName: u.lastName ?? null,
     displayName: u.displayName ?? null,
     phone: u.phone ?? null,
-    avatarUrl: u.avatarUrl ?? null,
     isDisabled: u.isDisabled,
     lastSignInAt: u.lastSignInAt ?? null,
     lastSeenAt: u.lastSeenAt ?? null,

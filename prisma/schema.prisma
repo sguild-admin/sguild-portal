@@ -28,7 +28,6 @@ model AppUser {
   lastName     String?  @db.Text
   displayName  String?  @db.Text
   phone        String?  @db.Text
-  avatarUrl    String?  @db.Text
 
   isDisabled   Boolean  @default(false)
 

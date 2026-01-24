@@ -152,10 +152,17 @@ export async function handleClerkEventAction(args: {
 
       const mem = extractMembership(event as any)
       if (mem?.clerkOrgId && mem.clerkUserId) {
-        const dbOrg = await orgService.getOrCreateByClerkOrgId(mem.clerkOrgId)
+        const deletingMembership = isDeletedEvent(event.type)
+        const dbOrg = deletingMembership
+          ? await orgService.getByClerkOrgId(mem.clerkOrgId)
+          : await orgService.getOrCreateByClerkOrgId(mem.clerkOrgId)
+
+        if (!dbOrg) {
+          return
+        }
 
         let clerkRole = mem.clerkRole ?? null
-        if (!clerkRole) {
+        if (!deletingMembership && !clerkRole) {
           try {
             const client = await ctx.clerk()
             const memberships = await client.users.getOrganizationMembershipList({
@@ -169,16 +176,18 @@ export async function handleClerkEventAction(args: {
           }
         }
 
-        try {
-          const client = await ctx.clerk()
-          const clerkUser = await client.users.getUser(mem.clerkUserId)
-          await usersService.upsertFromClerkUserResource(clerkUser as any)
-        } catch {
-          await usersService.getOrCreateByClerkUserId(mem.clerkUserId)
+        if (!deletingMembership) {
+          try {
+            const client = await ctx.clerk()
+            const clerkUser = await client.users.getUser(mem.clerkUserId)
+            await usersService.upsertFromClerkUserResource(clerkUser as any)
+          } catch {
+            await usersService.getOrCreateByClerkUserId(mem.clerkUserId)
+          }
         }
 
         const membership = await membersService.syncFromClerkMembership({
-          action: isDeletedEvent(event.type) ? "delete" : "upsert",
+          action: deletingMembership ? "delete" : "upsert",
           orgId: dbOrg.id,
           clerkUserId: mem.clerkUserId,
           clerkRole,
@@ -187,7 +196,7 @@ export async function handleClerkEventAction(args: {
         })
 
         if (
-          !isDeletedEvent(event.type) &&
+          !deletingMembership &&
           membership &&
           membership.role === OrgRole.COACH &&
           membership.status === MembershipStatus.ACTIVE
@@ -196,7 +205,7 @@ export async function handleClerkEventAction(args: {
           await coachProfilesService.upsertByAppUserId(appUser.id, {})
         }
 
-        if (!isDeletedEvent(event.type) && (event.type === "organizationMembership.created" || mem.statusHint === "ACTIVE")) {
+        if (!deletingMembership && (event.type === "organizationMembership.created" || mem.statusHint === "ACTIVE")) {
           await orgInvitesService.markAcceptedFromMembership({
             orgId: dbOrg.id,
             acceptedAt: eventCreatedAt,
