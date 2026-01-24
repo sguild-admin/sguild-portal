@@ -4,7 +4,7 @@ import "server-only"
 import { verifyClerkWebhook } from "@/modules/webhooks/clerk.webhooks"
 import { buildCtx } from "@/modules/_shared/ctx"
 import { handleClerkEventAction } from "@/modules/webhooks/webhooks.actions"
-import { jsonError } from "@/lib/errors"
+import { jsonErrorResponse } from "@/modules/_shared/errors"
 
 function getEventCreatedAtFromSvix(request: Request): Date {
   const svixTs = request.headers.get("svix-timestamp")
@@ -31,7 +31,7 @@ export const webhooksRoutes = {
 
       return Response.json({ ok: true })
     } catch (err) {
-      return jsonError(err)
+      return jsonErrorResponse(err)
     }
   },
 
