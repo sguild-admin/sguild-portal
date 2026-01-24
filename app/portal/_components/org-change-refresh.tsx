@@ -18,6 +18,7 @@ export default function OrgChangeRefresh() {
     }
     if (currentId !== lastOrgId.current) {
       lastOrgId.current = currentId
+      if (!currentId) return
       const handle = window.setTimeout(() => {
         router.replace("/portal")
         router.refresh()

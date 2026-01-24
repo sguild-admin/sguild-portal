@@ -4,7 +4,6 @@ import { auth, clerkClient } from "@clerk/nextjs/server"
 import { redirect } from "next/navigation"
 import { getMembersMe } from "@/app/portal/_lib/members-me"
 import AutoSetActiveOrg from "@/app/portal/_components/auto-set-org"
-import OrgChangeRefresh from "@/app/portal/_components/org-change-refresh"
 
 export const dynamic = "force-dynamic"
 
@@ -36,7 +35,7 @@ export default async function PortalLayout({ children }: { children: ReactNode }
         <main className="min-h-screen p-6">
           <div className="flex items-center justify-between">
             <h1 className="text-xl font-semibold">Portal</h1>
-            <UserButton />
+            <UserButton signInUrl="/sign-in" signUpUrl="/sign-in" />
           </div>
 
           <div className="mt-10 max-w-xl space-y-4">
@@ -100,11 +99,27 @@ export default async function PortalLayout({ children }: { children: ReactNode }
     }
 
     if (me.code === "MEMBERSHIP_DISABLED" || me.code === "USER_DISABLED") {
+      const { userId } = await auth()
+      if (!userId) redirect("/sign-in")
+
+      const membershipCount = await getOrgMembershipCount(userId)
+      const hasOrgs = membershipCount > 0
+
       return (
         <main className="min-h-screen p-6">
           <div className="flex items-center justify-between">
             <h1 className="text-xl font-semibold">Portal</h1>
-            <UserButton />
+            <div className="flex items-center gap-3">
+              {hasOrgs ? (
+                <OrganizationSwitcher
+                  afterSelectOrganizationUrl="/portal"
+                  afterSelectPersonalUrl="/portal"
+                  afterCreateOrganizationUrl="/portal"
+                  hidePersonal
+                />
+              ) : null}
+              <UserButton signInUrl="/sign-in" signUpUrl="/sign-in" />
+            </div>
           </div>
 
           <div className="mt-10 max-w-xl space-y-2">
@@ -137,11 +152,10 @@ export default async function PortalLayout({ children }: { children: ReactNode }
               hidePersonal
             />
           ) : null}
-          <UserButton />
+          <UserButton signInUrl="/sign-in" signUpUrl="/sign-in" />
         </div>
       </div>
       <AutoSetActiveOrg />
-      <OrgChangeRefresh />
       <div className="mt-6">{children}</div>
     </main>
   )

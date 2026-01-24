@@ -9,6 +9,7 @@ export default async function Page() {
   if (!me.ok) {
     if (me.code === "NO_ACTIVE_ORG") return null
     if (me.code === "UNAUTHENTICATED") redirect("/sign-in")
+    if (me.code === "MEMBERSHIP_DISABLED" || me.code === "USER_DISABLED") return null
 
     throw new Error(me.message)
   }

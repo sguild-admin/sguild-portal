@@ -13,12 +13,17 @@ export default async function CoachLayout({ children }: { children: ReactNode })
     throw new Error(me.message)
   }
 
-  if (me.membership?.role === "ADMIN") {
-    redirect("/portal/admin")
-  }
-
   if (me.membership?.role !== "COACH") {
-    redirect("/portal")
+    return (
+      <main className="min-h-screen p-6">
+        <div className="space-y-2">
+          <h1 className="text-xl font-semibold">Forbidden</h1>
+          <p className="text-sm text-muted-foreground">
+            You don&apos;t have access to the coach portal.
+          </p>
+        </div>
+      </main>
+    )
   }
 
   return children
