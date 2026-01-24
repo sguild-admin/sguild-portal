@@ -46,6 +46,17 @@ export async function handleClerkEventAction(args: {
         return
       }
 
+      if (event.type === "user.updated") {
+        const deleted = (event as any)?.data?.deleted
+        if (deleted === true) {
+          const clerkUserId = (event as any)?.data?.id
+          if (typeof clerkUserId === "string") {
+            await usersService.deleteByClerkUserId(clerkUserId)
+          }
+          return
+        }
+      }
+
       if (event.type === "organization.deleted") {
         const clerkOrgId = (event as any)?.data?.id
         if (typeof clerkOrgId === "string") {
