@@ -157,4 +157,13 @@ export const orgInvitesRepo = {
       data: { status, ...timestamps },
     })
   },
+
+  async deleteByEmail(email: string, db: Db = prisma): Promise<void> {
+    await db.orgInvitation.deleteMany({ where: { email } })
+  },
+
+  async deleteByClerkInvitationIds(ids: string[], db: Db = prisma): Promise<void> {
+    if (!ids.length) return
+    await db.orgInvitation.deleteMany({ where: { clerkInvitationId: { in: ids } } })
+  },
 }

@@ -51,6 +51,33 @@ export async function handleClerkEventAction(args: {
           null
 
         if (clerkUserId) {
+          const appUser = await usersService.getByClerkUserId(clerkUserId)
+
+          try {
+            const client = await ctx.clerk()
+            const invites = await client.users.getOrganizationInvitationList({
+              userId: clerkUserId,
+              status: "pending",
+              limit: 100,
+            })
+            const inviteIds = invites.data.map(i => i.id)
+
+            for (const invite of invites.data) {
+              await client.organizations.revokeOrganizationInvitation({
+                organizationId: invite.organizationId,
+                invitationId: invite.id,
+              })
+            }
+
+            await orgInvitesService.deleteByClerkInvitationIds(inviteIds)
+          } catch {
+            // Swallow Clerk errors; we'll still remove DB invites by email.
+          }
+
+          if (appUser?.primaryEmail) {
+            await orgInvitesService.deleteByEmail(appUser.primaryEmail)
+          }
+
           await usersService.deleteByClerkUserId(clerkUserId)
         }
         return

@@ -137,4 +137,12 @@ export const orgInvitesService = {
       revokedAt,
     })
   },
+
+  async deleteByEmail(email: string) {
+    return orgInvitesRepo.deleteByEmail(normalizeEmail(email))
+  },
+
+  async deleteByClerkInvitationIds(ids: string[]) {
+    return orgInvitesRepo.deleteByClerkInvitationIds(ids)
+  },
 }
