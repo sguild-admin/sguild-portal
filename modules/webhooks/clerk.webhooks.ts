@@ -53,7 +53,6 @@ export function extractUser(
   firstName?: string | null
   lastName?: string | null
   displayName?: string | null
-  phone?: string | null
   lastSignInAt?: Date | null
   lastSeenAt?: Date | null
   isDisabled?: boolean
@@ -67,12 +66,6 @@ export function extractUser(
   const primaryEmail =
     Array.isArray(data?.email_addresses) && primaryEmailId
       ? data.email_addresses.find((e: any) => e?.id === primaryEmailId)?.email_address ?? null
-      : null
-
-  const primaryPhoneId = data?.primary_phone_number_id
-  const phone =
-    Array.isArray(data?.phone_numbers) && primaryPhoneId
-      ? data.phone_numbers.find((p: any) => p?.id === primaryPhoneId)?.phone_number ?? null
       : null
 
   const firstName = typeof data?.first_name === "string" ? data.first_name : null
@@ -94,7 +87,6 @@ export function extractUser(
     firstName,
     lastName,
     displayName,
-    phone,
     lastSignInAt,
     lastSeenAt,
     isDisabled,

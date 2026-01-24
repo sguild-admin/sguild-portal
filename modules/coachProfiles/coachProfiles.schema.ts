@@ -8,7 +8,8 @@ export const PatchCoachProfileBodySchema = z
     bio: z.string().max(4000).optional(),
     notes: z.string().max(8000).optional(),
     zip: z.string().max(20).optional(),
+    phone: z.string().max(30).optional(),
   })
-  .refine(v => v.bio !== undefined || v.notes !== undefined || v.zip !== undefined, {
-    message: "Provide bio, notes, or zip",
+  .refine(v => v.bio !== undefined || v.notes !== undefined || v.zip !== undefined || v.phone !== undefined, {
+    message: "Provide bio, notes, zip, or phone",
   })

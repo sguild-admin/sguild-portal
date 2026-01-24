@@ -9,7 +9,6 @@ import { usersRepo } from "@/modules/users/users.repo"
 type ClerkUserResource = {
   id: string
   primaryEmailAddress?: { emailAddress?: string | null } | null
-  primaryPhoneNumber?: { phoneNumber?: string | null } | null
   imageUrl?: string | null
   firstName?: string | null
   lastName?: string | null
@@ -52,7 +51,6 @@ export const usersService = {
     firstName?: string | null
     lastName?: string | null
     displayName?: string | null
-    phone?: string | null
     isDisabled?: boolean
     lastSignInAt?: Date | null
     lastSeenAt?: Date | null
@@ -73,7 +71,6 @@ export const usersService = {
         lastName: resource.lastName ?? null,
         username: resource.username ?? null,
       }),
-      phone: resource.primaryPhoneNumber?.phoneNumber ?? null,
       lastSignInAt: typeof resource.lastSignInAt === "number" ? new Date(resource.lastSignInAt) : null,
       lastSeenAt: typeof resource.lastActiveAt === "number" ? new Date(resource.lastActiveAt) : null,
       isDisabled: !!(resource.banned || resource.locked),

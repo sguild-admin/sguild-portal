@@ -18,7 +18,7 @@ export const coachProfilesRepo = {
   // Create or update a profile by app user id.
   async upsertByAppUserId(
     appUserId: string,
-    data: { bio?: string | null; notes?: string | null; zip?: string | null },
+    data: { bio?: string | null; notes?: string | null; zip?: string | null; phone?: string | null },
     db: Db = prisma
   ): Promise<CoachProfile> {
     return db.coachProfile.upsert({
@@ -28,11 +28,13 @@ export const coachProfilesRepo = {
         bio: data.bio ?? null,
         notes: data.notes ?? null,
         zip: data.zip ?? null,
+        phone: data.phone ?? null,
       },
       update: {
         bio: data.bio ?? undefined,
         notes: data.notes ?? undefined,
         zip: data.zip ?? undefined,
+        phone: data.phone ?? undefined,
       },
     })
   },

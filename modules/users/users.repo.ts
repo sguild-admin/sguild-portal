@@ -40,7 +40,6 @@ export const usersRepo = {
       firstName?: string | null
       lastName?: string | null
       displayName?: string | null
-      phone?: string | null
       isDisabled?: boolean
       lastSignInAt?: Date | null
       lastSeenAt?: Date | null
@@ -55,7 +54,6 @@ export const usersRepo = {
         firstName: input.firstName ?? null,
         lastName: input.lastName ?? null,
         displayName: input.displayName ?? null,
-        phone: input.phone ?? null,
         isDisabled: input.isDisabled ?? false,
         lastSignInAt: input.lastSignInAt ?? null,
         lastSeenAt: input.lastSeenAt ?? null,
@@ -65,7 +63,6 @@ export const usersRepo = {
         firstName: input.firstName ?? undefined,
         lastName: input.lastName ?? undefined,
         displayName: input.displayName ?? undefined,
-        phone: input.phone ?? undefined,
         isDisabled: input.isDisabled ?? undefined,
         lastSignInAt: input.lastSignInAt ?? undefined,
         lastSeenAt: input.lastSeenAt ?? undefined,

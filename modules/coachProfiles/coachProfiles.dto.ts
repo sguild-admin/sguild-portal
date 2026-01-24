@@ -9,6 +9,7 @@ export type CoachProfileDTO = {
   bio: string | null
   notes: string | null
   zip: string | null
+  phone: string | null
   createdAt: Date
   updatedAt: Date
 }
@@ -21,6 +22,7 @@ export function toCoachProfileDTO(profile: CoachProfile): CoachProfileDTO {
     bio: profile.bio ?? null,
     notes: profile.notes ?? null,
     zip: profile.zip ?? null,
+    phone: profile.phone ?? null,
     createdAt: profile.createdAt,
     updatedAt: profile.updatedAt,
   }

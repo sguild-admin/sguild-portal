@@ -15,7 +15,7 @@ export const coachProfilesService = {
   // Create or update profile by app user id.
   async upsertByAppUserId(
     appUserId: string,
-    data: { bio?: string | null; notes?: string | null; zip?: string | null }
+    data: { bio?: string | null; notes?: string | null; zip?: string | null; phone?: string | null }
   ) {
     return coachProfilesRepo.upsertByAppUserId(appUserId, data)
   },

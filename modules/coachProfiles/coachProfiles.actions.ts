@@ -30,6 +30,7 @@ export async function upsertMyCoachProfileAction(body: unknown) {
     bio: data.bio ?? null,
     notes: data.notes ?? null,
     zip: data.zip ?? null,
+    phone: data.phone ?? null,
   })
 
   return { profile: toCoachProfileDTO(profile) }
