@@ -69,4 +69,8 @@ export const usersService = {
     })
   },
 
+  async deleteByClerkUserId(clerkUserId: string): Promise<void> {
+    await usersRepo.deleteByClerkUserId(clerkUserId)
+  },
+
 }

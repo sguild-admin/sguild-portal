@@ -67,5 +67,9 @@ export const usersRepo = {
       },
     })
   },
+
+  async deleteByClerkUserId(clerkUserId: string, db: Db = prisma): Promise<void> {
+    await db.appUser.deleteMany({ where: { clerkUserId } })
+  },
 }
 

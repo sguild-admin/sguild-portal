@@ -47,4 +47,8 @@ export const orgRepo = {
       data: { primaryAdminClerkUserId: clerkUserId },
     })
   },
+
+  async deleteByClerkOrgId(clerkOrgId: string, db: Db = prisma): Promise<void> {
+    await db.organization.deleteMany({ where: { clerkOrgId } })
+  },
 }

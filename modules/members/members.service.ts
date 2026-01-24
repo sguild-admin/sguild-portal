@@ -128,11 +128,14 @@ export const membersService = {
     })
   },
 
-  async syncFromClerkMembership(input: ClerkMembershipSyncInput) {
+  async syncFromClerkMembership(input: ClerkMembershipSyncInput): Promise<OrgMembership | null> {
     const now = input.eventCreatedAt ?? new Date()
 
     if (input.action === "delete") {
-      return this.disable(input.orgId, input.clerkUserId, now)
+      const existing = await membersRepo.getByOrgAndClerkUserId(input.orgId, input.clerkUserId)
+      if (!existing) return null
+      await membersRepo.deleteMembership(input.orgId, input.clerkUserId)
+      return existing
     }
 
     await usersService.getOrCreateByClerkUserId(input.clerkUserId)

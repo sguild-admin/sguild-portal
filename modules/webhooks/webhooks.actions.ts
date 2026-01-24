@@ -38,6 +38,22 @@ export async function handleClerkEventAction(args: {
     provider: "clerk",
     eventId,
     work: async () => {
+      if (event.type === "user.deleted") {
+        const clerkUserId = (event as any)?.data?.id
+        if (typeof clerkUserId === "string") {
+          await usersService.deleteByClerkUserId(clerkUserId)
+        }
+        return
+      }
+
+      if (event.type === "organization.deleted") {
+        const clerkOrgId = (event as any)?.data?.id
+        if (typeof clerkOrgId === "string") {
+          await orgService.deleteByClerkOrgId(clerkOrgId)
+        }
+        return
+      }
+
       const user = extractUser(event as any)
       if (user && (event.type === "user.created" || event.type === "user.updated")) {
         await usersService.upsertFromClerkUser(user)
@@ -94,6 +110,7 @@ export async function handleClerkEventAction(args: {
 
         if (
           !isDeletedEvent(event.type) &&
+          membership &&
           membership.role === OrgRole.COACH &&
           membership.status === MembershipStatus.ACTIVE
         ) {

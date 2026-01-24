@@ -32,4 +32,8 @@ export const orgService = {
   async setPrimaryAdmin(orgId: string, clerkUserId: string | null) {
     return orgRepo.setPrimaryAdmin(orgId, clerkUserId)
   },
+
+  async deleteByClerkOrgId(clerkOrgId: string): Promise<void> {
+    await orgRepo.deleteByClerkOrgId(clerkOrgId)
+  },
 }
