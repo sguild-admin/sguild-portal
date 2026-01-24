@@ -41,7 +41,8 @@ export async function createOrgInviteAction(body: unknown) {
   const data = CreateOrgInviteBodySchema.parse(body)
 
   const email = data.email.trim().toLowerCase()
-  const role = data.role ?? OrgRole.COACH
+  // Invites are always for coaches; UI never exposes role changes.
+  const role = OrgRole.COACH
   const existing = await orgInvitesService.getByOrgAndEmail(org.id, email)
   if (existing?.status === OrgInviteStatus.ACCEPTED) {
     throw new HttpError(409, "ALREADY_MEMBER", "Member already accepted invite")
@@ -50,17 +51,44 @@ export async function createOrgInviteAction(body: unknown) {
   const dbInviteId = existing?.status === OrgInviteStatus.PENDING ? existing.id : randomUUID()
 
   const client = await clerkClient()
-  const invite = await client.organizations.createOrganizationInvitation({
+  const basePayload = {
     organizationId: clerkOrgId,
     emailAddress: email,
     role: mapOrgRoleToClerkRole(role),
-    inviterUserId: clerkUserId,
     expiresInDays: data.expiresInDays,
     redirectUrl: data.redirectUrl,
     publicMetadata: {
       dbInviteId,
     },
-  })
+  }
+
+  let invite
+  try {
+    invite = await client.organizations.createOrganizationInvitation({
+      ...basePayload,
+      inviterUserId: clerkUserId,
+    })
+  } catch (err) {
+    const message = err instanceof Error ? err.message.toLowerCase() : ""
+    if (message.includes("not found")) {
+      try {
+        invite = await client.organizations.createOrganizationInvitation(basePayload)
+      } catch (retryErr) {
+        const retryMessage =
+          retryErr instanceof Error ? retryErr.message.toLowerCase() : ""
+        if (retryMessage.includes("not found")) {
+          throw new HttpError(
+            404,
+            "CLERK_NOT_FOUND",
+            `Organization not found in Clerk (id: ${clerkOrgId}). Verify CLERK_SECRET_KEY for this environment.`
+          )
+        }
+        throw retryErr
+      }
+    } else {
+      throw err
+    }
+  }
 
   const expiresAt = invite.expiresAt ? new Date(invite.expiresAt) : null
   const lastSentAt = new Date()
@@ -145,15 +173,42 @@ export async function resendOrgInviteAction(clerkInvitationId: string) {
   }
 
   const client = await clerkClient()
-  const invite = await client.organizations.createOrganizationInvitation({
+  const basePayload = {
     organizationId: clerkOrgId,
     emailAddress: existing.email,
     role: existing.role ?? mapOrgRoleToClerkRole(OrgRole.COACH),
-    inviterUserId: clerkUserId,
     publicMetadata: {
       dbInviteId: existing.id,
     },
-  })
+  }
+
+  let invite
+  try {
+    invite = await client.organizations.createOrganizationInvitation({
+      ...basePayload,
+      inviterUserId: clerkUserId,
+    })
+  } catch (err) {
+    const message = err instanceof Error ? err.message.toLowerCase() : ""
+    if (message.includes("not found")) {
+      try {
+        invite = await client.organizations.createOrganizationInvitation(basePayload)
+      } catch (retryErr) {
+        const retryMessage =
+          retryErr instanceof Error ? retryErr.message.toLowerCase() : ""
+        if (retryMessage.includes("not found")) {
+          throw new HttpError(
+            404,
+            "CLERK_NOT_FOUND",
+            `Organization not found in Clerk (id: ${clerkOrgId}). Verify CLERK_SECRET_KEY for this environment.`
+          )
+        }
+        throw retryErr
+      }
+    } else {
+      throw err
+    }
+  }
 
   const updated = await orgInvitesService.updateById(existing.id, {
     clerkInvitationId: invite.id,

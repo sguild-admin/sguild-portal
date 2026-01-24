@@ -1,20 +1,31 @@
 // app/portal/page.tsx
 // Redirect users to the right portal based on membership role.
 import { redirect } from "next/navigation"
-import { getMembersMe } from "@/app/portal/_lib/members-me"
+import { unknownToAppError } from "@/modules/_shared/errors"
+import { getMeAction } from "@/modules/members"
 
 // Always evaluate on the server for auth checks.
 export const dynamic = "force-dynamic"
+export const revalidate = 0
+export const fetchCache = "force-no-store"
+
+async function getMembersMeSafe() {
+  try {
+    const dto = await getMeAction()
+    return { ok: true as const, ...dto }
+  } catch (err) {
+    const e = unknownToAppError(err)
+    return { ok: false as const, code: e.code, message: e.message }
+  }
+}
 
 export default async function Page() {
-  const me = await getMembersMe()
+  const me = await getMembersMeSafe()
 
   if (!me.ok) {
-    if (me.code === "NO_ACTIVE_ORG") return null
+    if (me.code === "NO_ACTIVE_ORG") redirect("/portal/select-org")
     if (me.code === "UNAUTHENTICATED") redirect("/sign-in")
-    if (me.code === "MEMBERSHIP_DISABLED" || me.code === "USER_DISABLED") return null
-
-    throw new Error(me.message)
+    return null
   }
 
   if (me.membership?.role === "ADMIN") {

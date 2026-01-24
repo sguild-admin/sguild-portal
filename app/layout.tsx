@@ -2,6 +2,7 @@
 // Root layout and global providers.
 import type { Metadata } from "next"
 import { ClerkProvider } from "@clerk/nextjs"
+import { Toaster } from "sonner"
 import "./globals.css"
 
 export const metadata: Metadata = {
@@ -21,6 +22,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           >
             {children}
           </div>
+          <Toaster richColors position="top-right" />
         </body>
       </html>
     </ClerkProvider>

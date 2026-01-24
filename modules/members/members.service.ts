@@ -4,7 +4,7 @@ import "server-only"
 
 import type { OrgMembership } from "@prisma/client"
 import { MembershipStatus, OrgRole } from "@prisma/client"
-import { membersRepo, type UpsertMembershipInput } from "@/modules/members/members.repo"
+import { membersRepo, type MemberWithUser, type UpsertMembershipInput } from "@/modules/members/members.repo"
 import { usersService } from "@/modules/users/users.service"
 
 // Input shape for syncing membership events from Clerk webhooks.
@@ -69,6 +69,14 @@ export const membersService = {
     return membersRepo.getByOrgAndClerkUserId(orgId, clerkUserId)
   },
 
+  // Lookup by org + Clerk user id with related user data.
+  async getByOrgAndClerkUserIdWithUser(
+    orgId: string,
+    clerkUserId: string
+  ): Promise<MemberWithUser | null> {
+    return membersRepo.getByOrgAndClerkUserIdWithUser(orgId, clerkUserId)
+  },
+
   // List members by org with optional filters.
   async listByOrg(
     orgId: string,
@@ -85,6 +93,20 @@ export const membersService = {
       },
       undefined
     )
+  },
+
+  // List members with related user data.
+  async listByOrgWithUser(
+    orgId: string,
+    input?: { role?: OrgRole; status?: MembershipStatus; take?: number; skip?: number }
+  ): Promise<MemberWithUser[]> {
+    return membersRepo.listByOrgWithUser(orgId, {
+      role: input?.role,
+      status: input?.status,
+      take: input?.take,
+      skip: input?.skip,
+      orderBy: { createdAt: "asc" },
+    })
   },
 
   // Update member role.

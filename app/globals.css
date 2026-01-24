@@ -1,28 +1,74 @@
 @import "tailwindcss";
 
-
-/* Keep the base background stable (helps avoid dark overscroll flashes on mobile) */
+/* Base background */
 html,
 body {
   height: 100%;
-  background: #f0f9ff; /* tailwind sky-50 */
+  background: #f7f8fc;
 }
 
 body {
-  color: rgb(30 41 59); /* slate-800 */
+  color: rgb(15 23 42); /* slate-900 */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Your recent gradient container look */
+/* App backdrop */
 #content {
   min-height: 100vh;
-  background: linear-gradient(to bottom, #f0f9ff, #ffffff);
+  background: linear-gradient(180deg, #eef4ff 0%, #ffffff 38%, #ffffff 100%);
 }
 
-/* Optional: reduces iOS “rubber band” weirdness in some cases */
+/* Optional: reduces iOS rubber-band */
 @supports (overscroll-behavior: none) {
   body {
     overscroll-behavior-y: none;
   }
+}
+
+/* Layout helpers */
+.app-container {
+  width: 100%;
+  max-width: 1152px;
+  margin: 0 auto;
+}
+
+.app-card {
+  border-radius: 1.5rem;
+  border: 1px solid rgba(203, 213, 225, 0.7); /* slate-200 */
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+}
+
+.app-header {
+  border-radius: 16px;
+  border: 1px solid rgba(203, 213, 225, 0.65);
+  background: rgba(255, 255, 255, 0.7);
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.06);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  padding: 16px;
+}
+
+/* Headings */
+.app-title {
+  font-size: 1.5rem;
+  line-height: 2rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: rgb(15 23 42);
+}
+
+.app-subtitle {
+  color: rgb(71 85 105); /* slate-600 */
+  font-size: 0.95rem;
+  line-height: 1.35rem;
+}
+
+.section-title {
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgb(100 116 139); /* slate-500 */
 }

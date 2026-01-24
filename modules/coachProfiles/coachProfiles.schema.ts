@@ -5,11 +5,20 @@ import { z } from "zod"
 // Body schema for updating a coach profile.
 export const PatchCoachProfileBodySchema = z
   .object({
-    bio: z.string().max(4000).optional(),
-    notes: z.string().max(8000).optional(),
-    zip: z.string().max(20).optional(),
-    phone: z.string().max(30).optional(),
+    displayName: z.string().max(200).nullable().optional(),
+    bio: z.string().max(4000).nullable().optional(),
+    notes: z.string().max(8000).nullable().optional(),
+    zip: z.string().max(20).nullable().optional(),
+    phone: z.string().max(30).nullable().optional(),
   })
-  .refine(v => v.bio !== undefined || v.notes !== undefined || v.zip !== undefined || v.phone !== undefined, {
-    message: "Provide bio, notes, zip, or phone",
-  })
+  .refine(
+    v =>
+      v.displayName !== undefined ||
+      v.bio !== undefined ||
+      v.notes !== undefined ||
+      v.zip !== undefined ||
+      v.phone !== undefined,
+    {
+      message: "Provide display name, bio, notes, zip, or phone",
+    }
+  )

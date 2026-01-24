@@ -20,6 +20,30 @@ export type UpsertMembershipInput = {
   disabledAt?: Date | null
 }
 
+// Membership record including basic user and coach profile data.
+export type MemberWithUser = Prisma.OrgMembershipGetPayload<{
+  include: {
+    appUser: {
+      select: {
+        id: true
+        clerkUserId: true
+        primaryEmail: true
+        firstName: true
+        lastName: true
+        displayName: true
+        coachProfile: {
+          select: {
+            bio: true
+            notes: true
+            zip: true
+            phone: true
+          }
+        }
+      }
+    }
+  }
+}>
+
 // Repo functions are pure data access (no auth or validation).
 export const membersRepo = {
   // Lookup membership by internal id.
@@ -36,6 +60,39 @@ export const membersRepo = {
     return db.orgMembership.findUnique({
       where: {
         orgId_clerkUserId: { orgId, clerkUserId },
+      },
+    })
+  },
+
+  // Lookup membership with related user and coach profile.
+  async getByOrgAndClerkUserIdWithUser(
+    orgId: string,
+    clerkUserId: string,
+    db: Db = prisma
+  ): Promise<MemberWithUser | null> {
+    return db.orgMembership.findUnique({
+      where: {
+        orgId_clerkUserId: { orgId, clerkUserId },
+      },
+      include: {
+        appUser: {
+          select: {
+            id: true,
+            clerkUserId: true,
+            primaryEmail: true,
+            firstName: true,
+            lastName: true,
+            displayName: true,
+            coachProfile: {
+              select: {
+                bio: true,
+                notes: true,
+                zip: true,
+                phone: true,
+              },
+            },
+          },
+        },
       },
     })
   },
@@ -61,6 +118,50 @@ export const membersRepo = {
       take: input?.take ?? 100,
       skip: input?.skip ?? 0,
       orderBy: input?.orderBy ?? { createdAt: "asc" },
+    })
+  },
+
+  // List memberships with related user and coach profile data.
+  async listByOrgWithUser(
+    orgId: string,
+    input?: {
+      role?: OrgRole
+      status?: MembershipStatus
+      take?: number
+      skip?: number
+      orderBy?: Prisma.OrgMembershipOrderByWithRelationInput
+    },
+    db: Db = prisma
+  ): Promise<MemberWithUser[]> {
+    return db.orgMembership.findMany({
+      where: {
+        orgId,
+        ...(input?.role ? { role: input.role } : {}),
+        ...(input?.status ? { status: input.status } : {}),
+      },
+      take: input?.take ?? 100,
+      skip: input?.skip ?? 0,
+      orderBy: input?.orderBy ?? { createdAt: "asc" },
+      include: {
+        appUser: {
+          select: {
+            id: true,
+            clerkUserId: true,
+            primaryEmail: true,
+            firstName: true,
+            lastName: true,
+            displayName: true,
+            coachProfile: {
+              select: {
+                bio: true,
+                notes: true,
+                zip: true,
+                phone: true,
+              },
+            },
+          },
+        },
+      },
     })
   },
 

@@ -77,6 +77,14 @@ export const usersService = {
     })
   },
 
+  // Update a user's display name by Clerk user id.
+  async updateDisplayNameByClerkUserId(
+    clerkUserId: string,
+    displayName: string | null
+  ): Promise<AppUser> {
+    return usersRepo.upsertByClerkUserId({ clerkUserId, displayName })
+  },
+
   // Remove user records by Clerk user id.
   async deleteByClerkUserId(clerkUserId: string): Promise<void> {
     await usersRepo.deleteByClerkUserId(clerkUserId)

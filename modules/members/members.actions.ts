@@ -7,7 +7,7 @@ import { authzService, HttpError } from "@/modules/authz/authz.service"
 import { asEnum, asInt, getQuery } from "@/modules/_shared/http"
 import { membersService } from "@/modules/members/members.service"
 import { ListMembersQuerySchema, PatchMemberBodySchema } from "./members.schema"
-import { toMemberDTO } from "./members.dto"
+import { toMemberWithUserDTO } from "./members.dto"
 
 // List members for the active org (admin only).
 export async function listMembersAction(request: Request) {
@@ -20,9 +20,9 @@ export async function listMembersAction(request: Request) {
   const skip = Math.max(asInt(query.get("skip"), 0), 0)
 
   const input = ListMembersQuerySchema.parse({ role, status, take, skip })
-  const members = await membersService.listByOrg(org.id, input)
+  const members = await membersService.listByOrgWithUser(org.id, input)
 
-  return { members: members.map(toMemberDTO) }
+  return { members: members.map(toMemberWithUserDTO) }
 }
 
 // Return membership and org info for current user.
@@ -39,10 +39,10 @@ export async function getMeAction() {
 export async function getMemberByClerkUserIdAction(clerkUserId: string) {
   const { org } = await authzService.requireAdmin()
 
-  const member = await membersService.getByOrgAndClerkUserId(org.id, clerkUserId)
+  const member = await membersService.getByOrgAndClerkUserIdWithUser(org.id, clerkUserId)
   if (!member) throw new HttpError(404, "NOT_FOUND", "Member not found")
 
-  return { member: toMemberDTO(member) }
+  return { member: toMemberWithUserDTO(member) }
 }
 
 // Patch a member's role/status (admin only).
@@ -66,5 +66,7 @@ export async function patchMemberByClerkUserIdAction(clerkUserId: string, body: 
     updated = await membersService.setStatus(org.id, clerkUserId, data.status, timestamps)
   }
 
-  return { member: toMemberDTO(updated) }
+  const refreshed = await membersService.getByOrgAndClerkUserIdWithUser(org.id, clerkUserId)
+  if (!refreshed) throw new HttpError(404, "NOT_FOUND", "Member not found")
+  return { member: toMemberWithUserDTO(refreshed) }
 }
