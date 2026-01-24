@@ -74,7 +74,8 @@ export async function handleClerkEventAction(args: {
         const dbOrg = await orgService.getOrCreateByClerkOrgId(mem.clerkOrgId)
 
         try {
-          const clerkUser = await ctx.clerk.users.getUser(mem.clerkUserId)
+          const client = await ctx.clerk()
+          const clerkUser = await client.users.getUser(mem.clerkUserId)
           await usersService.upsertFromClerkUserResource(clerkUser as any)
         } catch {
           await usersService.getOrCreateByClerkUserId(mem.clerkUserId)

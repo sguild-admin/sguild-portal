@@ -120,7 +120,12 @@ export function extractMembership(
 
   if (!clerkOrgId || !clerkUserId) return null
 
-  const clerkRole = typeof data?.role === "string" ? data.role : undefined
+  const clerkRole =
+    typeof data?.role === "string"
+      ? data.role
+      : typeof data?.role_name === "string"
+        ? data.role_name
+        : undefined
   const statusHint = inferMembershipStatusHint(evt.type, data?.status)
   const email = typeof data?.public_user_data?.identifier === "string" ? data.public_user_data.identifier : null
   const metadata = (data?.public_metadata as Record<string, unknown> | null) ?? null
@@ -176,6 +181,8 @@ function inferMembershipStatusHint(
   eventType: string,
   rawStatus: unknown
 ): "INVITED" | "ACTIVE" | "DISABLED" | undefined {
+  if (eventType === "organizationMembership.created") return "ACTIVE"
+
   if (eventType.endsWith(".deleted")) return "DISABLED"
 
   if (typeof rawStatus === "string") {
