@@ -31,12 +31,10 @@ function mapClerkRoleToOrgRole(clerkRole: string | null): OrgRole {
 function mapClerkStatusToMembershipStatus(clerkStatus: string | null): MembershipStatus {
   const s = (clerkStatus ?? "").toLowerCase()
 
-  // Clerk commonly reports: "active", sometimes "pending"
-  if (s === "active") return MembershipStatus.ACTIVE
-  if (s === "pending" || s === "invited") return MembershipStatus.INVITED
+  if (s === "disabled" || s === "deleted") return MembershipStatus.DISABLED
 
-  // Default conservative behavior: treat unknown as INVITED
-  return MembershipStatus.INVITED
+  // Treat pending/invited as ACTIVE since we no longer model INVITED
+  return MembershipStatus.ACTIVE
 }
 
 function computeTimestamps(
@@ -44,14 +42,6 @@ function computeTimestamps(
   existing: OrgMembership | null,
   now: Date
 ): Pick<UpsertMembershipInput, "invitedAt" | "activatedAt" | "disabledAt"> {
-  if (next === MembershipStatus.INVITED) {
-    return {
-      invitedAt: existing?.invitedAt ?? now,
-      activatedAt: null,
-      disabledAt: null,
-    }
-  }
-
   if (next === MembershipStatus.ACTIVE) {
     return {
       invitedAt: existing?.invitedAt ?? null,

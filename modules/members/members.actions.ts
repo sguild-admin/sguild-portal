@@ -65,11 +65,9 @@ export async function patchMemberByClerkUserIdAction(clerkUserId: string, body: 
   if (data.status) {
     const now = new Date()
     const timestamps =
-      data.status === MembershipStatus.INVITED
-        ? { invitedAt: now, disabledAt: null }
-        : data.status === MembershipStatus.ACTIVE
-          ? { activatedAt: now, disabledAt: null }
-          : { disabledAt: now }
+      data.status === MembershipStatus.ACTIVE
+        ? { activatedAt: now, disabledAt: null }
+        : { disabledAt: now }
 
     updated = await membersService.setStatus(org.id, clerkUserId, data.status, timestamps)
   }

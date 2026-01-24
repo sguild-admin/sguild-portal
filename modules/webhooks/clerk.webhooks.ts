@@ -104,7 +104,7 @@ export function extractMembership(
   clerkOrgId: string
   clerkUserId: string
   clerkRole?: string
-  statusHint?: "INVITED" | "ACTIVE" | "DISABLED"
+  statusHint?: "ACTIVE" | "DISABLED"
   email?: string | null
   metadata?: Record<string, unknown> | null
 } | null {
@@ -180,7 +180,7 @@ export function extractInvitation(
 function inferMembershipStatusHint(
   eventType: string,
   rawStatus: unknown
-): "INVITED" | "ACTIVE" | "DISABLED" | undefined {
+): "ACTIVE" | "DISABLED" | undefined {
   if (eventType === "organizationMembership.created") return "ACTIVE"
 
   if (eventType.endsWith(".deleted")) return "DISABLED"
@@ -188,9 +188,8 @@ function inferMembershipStatusHint(
   if (typeof rawStatus === "string") {
     const s = rawStatus.toLowerCase()
     if (s.includes("active")) return "ACTIVE"
-    if (s.includes("invited") || s.includes("pending")) return "INVITED"
     if (s.includes("disabled") || s.includes("deleted")) return "DISABLED"
   }
 
-  return undefined
+  return "ACTIVE"
 }

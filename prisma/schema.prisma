@@ -47,7 +47,7 @@ model OrgMembership {
   orgId       String           @db.Uuid
   clerkUserId String
   role        OrgRole
-  status      MembershipStatus @default(INVITED)
+  status      MembershipStatus @default(ACTIVE)
   invitedAt   DateTime?
   activatedAt DateTime?
   disabledAt  DateTime?
@@ -112,7 +112,6 @@ enum OrgRole {
 }
 
 enum MembershipStatus {
-  INVITED
   ACTIVE
   DISABLED
 }

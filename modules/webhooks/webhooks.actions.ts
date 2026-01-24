@@ -54,6 +54,32 @@ export async function handleClerkEventAction(args: {
         return
       }
 
+      if (event.type === "user.created") {
+        const data: any = (event as any)?.data
+        const memberships = Array.isArray(data?.organization_memberships)
+          ? data.organization_memberships
+          : []
+
+        if (memberships.length === 0) {
+          const clerkUserId = data?.id
+          if (typeof clerkUserId === "string") {
+            const client = await ctx.clerk()
+            const invites = await client.users.getOrganizationInvitationList({
+              userId: clerkUserId,
+              status: "pending",
+              limit: 1,
+            })
+
+            if (invites?.data?.length) {
+              return
+            }
+
+            await client.users.deleteUser(clerkUserId)
+          }
+          return
+        }
+      }
+
       const user = extractUser(event as any)
       if (user && (event.type === "user.created" || event.type === "user.updated")) {
         await usersService.upsertFromClerkUser(user)
