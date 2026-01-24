@@ -1,7 +1,10 @@
+// app/portal/coach/layout.tsx
+// Coach portal access guard.
 import type { ReactNode } from "react"
 import { redirect } from "next/navigation"
 import { getMembersMe } from "@/app/portal/_lib/members-me"
 
+// Always evaluate on the server for auth checks.
 export const dynamic = "force-dynamic"
 
 export default async function CoachLayout({ children }: { children: ReactNode }) {

@@ -1,5 +1,8 @@
+// modules/coachProfiles/coachProfiles.dto.ts
+// DTOs for coach profile records.
 import type { CoachProfile } from "@prisma/client"
 
+// Public-facing coach profile representation.
 export type CoachProfileDTO = {
   id: string
   appUserId: string
@@ -10,6 +13,7 @@ export type CoachProfileDTO = {
   updatedAt: Date
 }
 
+// Map Prisma CoachProfile to CoachProfileDTO.
 export function toCoachProfileDTO(profile: CoachProfile): CoachProfileDTO {
   return {
     id: profile.id,

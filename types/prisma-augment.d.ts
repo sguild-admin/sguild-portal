@@ -1,4 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+// types/prisma-augment.d.ts
+// Local Prisma Client type extensions for environments where model typings differ.
 import '@prisma/client'
 
 declare module '@prisma/client' {

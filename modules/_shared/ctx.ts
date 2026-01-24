@@ -1,8 +1,10 @@
 // modules/_shared/ctx.ts
+// Builds a standardized request context used by module route handlers.
 import type { PrismaClient } from "@prisma/client"
 import { auth, clerkClient } from "@clerk/nextjs/server"
 import { prisma } from "@/db/client"
 
+// Normalized auth details extracted from Clerk.
 export type AuthInfo = {
   userId: string | null
   clerkOrgId: string | null
@@ -11,6 +13,7 @@ export type AuthInfo = {
   sessionClaims: Record<string, unknown> | null
 }
 
+// Request metadata useful for logging and tracing.
 export type RequestInfo = {
   url: string
   path: string
@@ -20,12 +23,14 @@ export type RequestInfo = {
   requestId: string
 }
 
+// Minimal logger contract (swapable in tests).
 export type Logger = {
   info: (msg: string, meta?: Record<string, unknown>) => void
   warn: (msg: string, meta?: Record<string, unknown>) => void
   error: (msg: string, meta?: Record<string, unknown>) => void
 }
 
+// The context injected into handlers for auth, logging, and infra access.
 export type AppCtx = {
   prisma: PrismaClient
   auth: AuthInfo
@@ -35,14 +40,17 @@ export type AppCtx = {
   now: () => Date
 }
 
+// Keep Prisma access in one place for easier mocking in tests.
 function getPrisma(): PrismaClient {
   return prisma
 }
 
+// Safe helper for request header lookup.
 function getHeader(req: Request, key: string): string | null {
   return req.headers.get(key)
 }
 
+// Prefix all logs with a request id for traceability.
 function buildLogger(requestId: string): Logger {
   const prefix = `[${requestId}]`
   return {
@@ -52,6 +60,7 @@ function buildLogger(requestId: string): Logger {
   }
 }
 
+// Prefer existing request id headers; fall back to a generated UUID.
 function getRequestId(req: Request): string {
   const existing =
     getHeader(req, "x-request-id") ??
@@ -61,6 +70,7 @@ function getRequestId(req: Request): string {
   return existing ?? crypto.randomUUID()
 }
 
+// Extract the first IP address from X-Forwarded-For.
 function getIp(req: Request): string | null {
   const xff = getHeader(req, "x-forwarded-for")
   if (!xff) return null
@@ -70,6 +80,7 @@ function getIp(req: Request): string | null {
 
 type ClerkAuth = Awaited<ReturnType<typeof auth>>
 
+// Main entrypoint: build context from a Next.js Request.
 export async function buildCtx(req: Request): Promise<AppCtx> {
   const prisma = getPrisma()
 

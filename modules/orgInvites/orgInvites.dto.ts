@@ -1,5 +1,8 @@
+// modules/orgInvites/orgInvites.dto.ts
+// DTOs for org invitation records.
 import type { OrgInvitation, OrgInviteStatus } from "@prisma/client"
 
+// Public-facing invite representation.
 export type OrgInviteDTO = {
   id: string
   orgId: string
@@ -15,6 +18,7 @@ export type OrgInviteDTO = {
   updatedAt: Date
 }
 
+// Map Prisma OrgInvitation to OrgInviteDTO.
 export function toOrgInviteDTO(invite: OrgInvitation): OrgInviteDTO {
   return {
     id: invite.id,

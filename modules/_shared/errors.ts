@@ -1,8 +1,11 @@
 // modules/_shared/errors.ts
+// Error types and helpers shared across modules and route handlers.
 import { ZodError } from "zod"
 
+// Validation errors keyed by field path.
 export type FieldErrors = Record<string, string[]>
 
+// Standard API error envelope returned to clients.
 export type ApiError = {
   ok: false
   code: string
@@ -12,6 +15,7 @@ export type ApiError = {
   requestId?: string
 }
 
+// Canonical application error (HTTP-aware, serializable).
 export class AppError extends Error {
   readonly status: number
   readonly code: string
@@ -40,6 +44,7 @@ export class AppError extends Error {
 /**
  * Backwards compatible alias if you already throw HttpError elsewhere
  */
+// Backwards compatible alias for AppError.
 export class HttpError extends AppError {
   constructor(status: number, code: string, message: string, details?: unknown) {
     super({ status, code, message, details })
@@ -47,10 +52,12 @@ export class HttpError extends AppError {
   }
 }
 
+// Narrow unknown errors to AppError instances.
 export function isAppError(err: unknown): err is AppError {
   return !!err && typeof err === "object" && "status" in err && "code" in err
 }
 
+// Convert Zod issues into a map of field paths to messages.
 export function fieldErrorsFromZod(err: ZodError): FieldErrors {
   const out: FieldErrors = {}
   for (const issue of err.issues) {
@@ -61,6 +68,7 @@ export function fieldErrorsFromZod(err: ZodError): FieldErrors {
   return out
 }
 
+// Create a 400 AppError from a ZodError.
 export function fromZod(err: ZodError): AppError {
   return new AppError({
     status: 400,
@@ -71,6 +79,7 @@ export function fromZod(err: ZodError): AppError {
   })
 }
 
+// Normalize any thrown value into an AppError.
 export function unknownToAppError(err: unknown): AppError {
   if (isAppError(err)) return err
   if (err instanceof ZodError) return fromZod(err)
@@ -92,6 +101,7 @@ export function unknownToAppError(err: unknown): AppError {
   })
 }
 
+// Serialize an error into the API envelope.
 export function toApiError(err: unknown, requestId?: string): ApiError {
   const e = unknownToAppError(err)
   return {
@@ -104,6 +114,7 @@ export function toApiError(err: unknown, requestId?: string): ApiError {
   }
 }
 
+// Build a Response with the standardized error payload.
 export function jsonErrorResponse(err: unknown, opts?: { requestId?: string }): Response {
   const e = unknownToAppError(err)
   const body = toApiError(e, opts?.requestId)
@@ -113,6 +124,7 @@ export function jsonErrorResponse(err: unknown, opts?: { requestId?: string }): 
 /**
  * Optional helper for guarding invariants
  */
+// Throw an AppError if a condition is falsy.
 export function invariant(condition: unknown, err: AppError): asserts condition {
   if (!condition) throw err
 }

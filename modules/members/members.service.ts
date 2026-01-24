@@ -1,4 +1,5 @@
 // modules/members/members.service.ts
+// Domain logic for org membership state and synchronization.
 import "server-only"
 
 import type { OrgMembership } from "@prisma/client"
@@ -6,6 +7,7 @@ import { MembershipStatus, OrgRole } from "@prisma/client"
 import { membersRepo, type UpsertMembershipInput } from "@/modules/members/members.repo"
 import { usersService } from "@/modules/users/users.service"
 
+// Input shape for syncing membership events from Clerk webhooks.
 export type ClerkMembershipSyncInput =
   | {
       action: "upsert"
@@ -22,12 +24,14 @@ export type ClerkMembershipSyncInput =
       eventCreatedAt?: Date | null
     }
 
+// Map Clerk role strings to app OrgRole enum.
 function mapClerkRoleToOrgRole(clerkRole: string | null): OrgRole {
   const r = (clerkRole ?? "").toLowerCase()
   if (r.includes("admin")) return OrgRole.ADMIN
   return OrgRole.COACH
 }
 
+// Map Clerk status strings to app MembershipStatus.
 function mapClerkStatusToMembershipStatus(clerkStatus: string | null): MembershipStatus {
   const s = (clerkStatus ?? "").toLowerCase()
 
@@ -37,6 +41,7 @@ function mapClerkStatusToMembershipStatus(clerkStatus: string | null): Membershi
   return MembershipStatus.ACTIVE
 }
 
+// Derive timestamps based on next status and existing membership.
 function computeTimestamps(
   next: MembershipStatus,
   existing: OrgMembership | null,
@@ -57,11 +62,14 @@ function computeTimestamps(
   }
 }
 
+// Service layer for memberships (no Request/auth reads).
 export const membersService = {
+  // Lookup by org + Clerk user id.
   async getByOrgAndClerkUserId(orgId: string, clerkUserId: string) {
     return membersRepo.getByOrgAndClerkUserId(orgId, clerkUserId)
   },
 
+  // List members by org with optional filters.
   async listByOrg(
     orgId: string,
     input?: { role?: OrgRole; status?: MembershipStatus; take?: number; skip?: number }
@@ -79,10 +87,12 @@ export const membersService = {
     )
   },
 
+  // Update member role.
   async setRole(orgId: string, clerkUserId: string, role: OrgRole) {
     return membersRepo.setRole(orgId, clerkUserId, role)
   },
 
+  // Update member status and optional timestamps.
   async setStatus(
     orgId: string,
     clerkUserId: string,
@@ -92,11 +102,13 @@ export const membersService = {
     return membersRepo.setStatus(orgId, clerkUserId, status, timestamps)
   },
 
+  // Upsert membership and ensure user exists.
   async upsert(input: UpsertMembershipInput) {
     await usersService.getOrCreateByClerkUserId(input.clerkUserId)
     return membersRepo.upsertMembership(input)
   },
 
+  // Disable a member (creates record if missing).
   async disable(orgId: string, clerkUserId: string, disabledAt?: Date) {
     const now = disabledAt ?? new Date()
     const existing = await membersRepo.getByOrgAndClerkUserId(orgId, clerkUserId)
@@ -118,6 +130,7 @@ export const membersService = {
     })
   },
 
+  // Apply Clerk membership event to local state.
   async syncFromClerkMembership(input: ClerkMembershipSyncInput): Promise<OrgMembership | null> {
     const now = input.eventCreatedAt ?? new Date()
 

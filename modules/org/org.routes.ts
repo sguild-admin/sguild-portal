@@ -1,9 +1,11 @@
 // modules/org/org.routes.ts
+// Thin HTTP layer: parse Request, call actions, return JSON.
 import "server-only"
 
 import { jsonErrorResponse } from "@/modules/_shared/errors"
 import { getMyOrgAction, setPrimaryAdminAction } from "./org.actions"
 
+// Route handlers exported to app/api.
 export const orgRoutes = {
   // GET /api/org/me
   async me() {

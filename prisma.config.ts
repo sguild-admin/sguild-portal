@@ -1,4 +1,5 @@
 // prisma.config.ts
+// Prisma CLI configuration (migrations + schema path).
 import "dotenv/config"
 import { defineConfig, env } from "prisma/config"
 

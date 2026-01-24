@@ -1,18 +1,22 @@
 // modules/_shared/idempotency.ts
+// Helpers to make webhook processing idempotent.
 import { PrismaClient, type WebhookEvent } from "@prisma/client"
-import { HttpError } from "./errors"
 
+// Supported webhook/event providers.
 export type IdempotencyProvider = "clerk" | "stripe" | "other"
 
+// Dependencies needed for idempotency operations.
 export type IdempotencyDeps = {
   prisma: PrismaClient
   now?: () => Date
 }
 
+// Result indicating whether work should proceed.
 export type EnsureOnceResult =
   | { shouldProcess: true; record: WebhookEvent }
   | { shouldProcess: false; record: WebhookEvent }
 
+// Service object for idempotent webhook processing.
 export const idempotencyService = {
   /**
    * Create-or-get an event record.

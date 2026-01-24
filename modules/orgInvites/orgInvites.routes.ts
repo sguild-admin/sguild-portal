@@ -1,3 +1,5 @@
+// modules/orgInvites/orgInvites.routes.ts
+// Thin HTTP layer for org invite endpoints.
 import "server-only"
 
 import type { NextRequest } from "next/server"
@@ -10,6 +12,7 @@ import {
   resendOrgInviteAction,
 } from "@/modules/orgInvites/orgInvites.actions"
 
+// Next.js route context type helper.
 type Ctx<P> = { params: P | Promise<P> }
 
 // GET /api/org-invites

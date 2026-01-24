@@ -1,11 +1,14 @@
 // modules/webhooks/clerk.webhooks.ts
+// Clerk webhook verification and payload extraction helpers.
 import "server-only"
 
 import { verifyWebhook } from "@clerk/backend/webhooks"
 import type { WebhookEvent } from "@clerk/backend/webhooks"
 
+// Export the Clerk webhook event type for reuse.
 export type ClerkWebhookEvent = WebhookEvent
 
+// Verify Svix signature and return the parsed event.
 export async function verifyClerkWebhook(request: Request): Promise<ClerkWebhookEvent> {
   const signingSecret = process.env.CLERK_WEBHOOK_SECRET?.trim()
   if (!signingSecret) throw new Error("Missing CLERK_WEBHOOK_SECRET")
@@ -13,6 +16,7 @@ export async function verifyClerkWebhook(request: Request): Promise<ClerkWebhook
   return verifyWebhook(request, { signingSecret })
 }
 
+// Type guards for event categories.
 export function isOrganizationEvent(evt: ClerkWebhookEvent): boolean {
   return typeof evt?.type === "string" && evt.type.startsWith("organization.")
 }
@@ -29,6 +33,7 @@ export function isOrganizationInvitationEvent(evt: ClerkWebhookEvent): boolean {
   return typeof evt?.type === "string" && evt.type.startsWith("organizationInvitation.")
 }
 
+// Extract org fields from organization.* events.
 export function extractOrganization(
   evt: ClerkWebhookEvent
 ): { clerkOrgId: string; name?: string } | null {
@@ -39,6 +44,7 @@ export function extractOrganization(
   return { clerkOrgId, name: data?.name }
 }
 
+// Extract user fields from user.* events.
 export function extractUser(
   evt: ClerkWebhookEvent
 ): {
@@ -76,7 +82,8 @@ export function extractUser(
   const fullName = [firstName, lastName].filter(Boolean).join(" ").trim()
   const displayName = fullName || username || null
 
-  const lastSignInAt = typeof data?.last_sign_in_at === "number" ? new Date(data.last_sign_in_at) : null
+  const lastSignInAt =
+    typeof data?.last_sign_in_at === "number" ? new Date(data.last_sign_in_at) : null
   const lastSeenAt = typeof data?.last_active_at === "number" ? new Date(data.last_active_at) : null
 
   const isDisabled = !!(data?.banned || data?.locked)
@@ -94,6 +101,7 @@ export function extractUser(
   }
 }
 
+// Extract membership fields from organizationMembership.* events.
 export function extractMembership(
   evt: ClerkWebhookEvent
 ): {
@@ -124,7 +132,10 @@ export function extractMembership(
         ? data.role_name
         : undefined
   const statusHint = inferMembershipStatusHint(evt.type, data?.status)
-  const email = typeof data?.public_user_data?.identifier === "string" ? data.public_user_data.identifier : null
+  const email =
+    typeof data?.public_user_data?.identifier === "string"
+      ? data.public_user_data.identifier
+      : null
   const metadata = (data?.public_metadata as Record<string, unknown> | null) ?? null
 
   return {
@@ -138,6 +149,7 @@ export function extractMembership(
   }
 }
 
+// Extract invitation fields from organizationInvitation.* events.
 export function extractInvitation(
   evt: ClerkWebhookEvent
 ): {
@@ -174,6 +186,7 @@ export function extractInvitation(
   }
 }
 
+// Infer ACTIVE/DISABLED status from event type and raw status.
 function inferMembershipStatusHint(
   eventType: string,
   rawStatus: unknown

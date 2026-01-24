@@ -1,12 +1,15 @@
 // modules/members/members.repo.ts
+// Prisma-only data access for org memberships.
 import "server-only"
 
 import { prisma } from "@/lib/prisma"
 import type { OrgMembership, Prisma } from "@prisma/client"
 import { MembershipStatus, OrgRole } from "@prisma/client"
 
+// Allow passing a transaction client or the root Prisma client.
 type Db = Prisma.TransactionClient | typeof prisma
 
+// Minimal membership payload used for upsert.
 export type UpsertMembershipInput = {
   orgId: string
   clerkUserId: string
@@ -17,11 +20,14 @@ export type UpsertMembershipInput = {
   disabledAt?: Date | null
 }
 
+// Repo functions are pure data access (no auth or validation).
 export const membersRepo = {
+  // Lookup membership by internal id.
   async getById(id: string, db: Db = prisma): Promise<OrgMembership | null> {
     return db.orgMembership.findUnique({ where: { id } })
   },
 
+  // Lookup membership by org + Clerk user id.
   async getByOrgAndClerkUserId(
     orgId: string,
     clerkUserId: string,
@@ -34,6 +40,7 @@ export const membersRepo = {
     })
   },
 
+  // List memberships for a given org with optional filters.
   async listByOrg(
     orgId: string,
     input?: {
@@ -57,6 +64,7 @@ export const membersRepo = {
     })
   },
 
+  // Create or update a membership record.
   async upsertMembership(
     data: UpsertMembershipInput,
     db: Db = prisma
@@ -84,6 +92,7 @@ export const membersRepo = {
     })
   },
 
+  // Update a member's role.
   async setRole(
     orgId: string,
     clerkUserId: string,
@@ -96,6 +105,7 @@ export const membersRepo = {
     })
   },
 
+  // Update a member's status and timestamps.
   async setStatus(
     orgId: string,
     clerkUserId: string,
@@ -118,6 +128,7 @@ export const membersRepo = {
     })
   },
 
+  // Delete a membership by org + Clerk user id.
   async deleteMembership(
     orgId: string,
     clerkUserId: string,

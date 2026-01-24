@@ -1,6 +1,8 @@
 // modules/members/members.dto.ts
+// DTOs for org membership records.
 import type { OrgMembership } from "@prisma/client"
 
+// Public-facing member representation.
 export type MemberDTO = {
   id: string
   orgId: string
@@ -14,6 +16,7 @@ export type MemberDTO = {
   updatedAt: Date
 }
 
+// Map Prisma OrgMembership to MemberDTO.
 export function toMemberDTO(m: OrgMembership): MemberDTO {
   return {
     id: m.id,

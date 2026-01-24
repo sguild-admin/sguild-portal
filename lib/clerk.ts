@@ -1,4 +1,5 @@
 // lib/clerk.ts
+// Server-side helpers for Clerk auth and webhook verification.
 import { auth } from "@clerk/nextjs/server"
 import { UnauthorizedError, BadRequestError } from "@/lib/errors"
 import env from "@/lib/env"
@@ -6,16 +7,19 @@ import env from "@/lib/env"
 /**
  * Returns Clerk auth context for the current request (server action, route handler, server component).
  */
+// Returns Clerk auth context for the current request.
 export async function getClerkAuth() {
   return auth()
 }
 
+// Require a signed-in user and return the Clerk user id.
 export async function requireClerkUserId() {
   const a = await auth()
   if (!a.userId) throw new UnauthorizedError("Not signed in")
   return a.userId
 }
 
+// Require a signed-in user with an active org and return the org id.
 export async function requireClerkOrgId() {
   const a = await auth()
   if (!a.userId) throw new UnauthorizedError("Not signed in")
@@ -23,6 +27,7 @@ export async function requireClerkOrgId() {
   return a.orgId
 }
  
+// Verify Clerk webhook via Svix headers.
 export async function verifyClerkWebhook(request: Request): Promise<unknown> {
   const secret = env.CLERK_WEBHOOK_SECRET
   if (!secret) throw new BadRequestError("CLERK_WEBHOOK_SECRET is not set")

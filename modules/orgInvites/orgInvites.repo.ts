@@ -1,11 +1,15 @@
+// modules/orgInvites/orgInvites.repo.ts
+// Prisma-only data access for org invitations.
 import "server-only"
 
 import { prisma } from "@/lib/prisma"
 import { OrgInviteStatus } from "@prisma/client"
 import type { OrgInvitation, Prisma } from "@prisma/client"
 
+// Allow passing a transaction or the root Prisma client.
 type Db = Prisma.TransactionClient | typeof prisma
 
+// Input used for upserting org invitations.
 export type UpsertOrgInviteInput = {
   orgId: string
   clerkInvitationId: string
@@ -18,19 +22,24 @@ export type UpsertOrgInviteInput = {
   revokedAt?: Date | null
 }
 
+// Input used for creating org invitations.
 export type CreateOrgInviteInput = UpsertOrgInviteInput & {
   id: string
 }
 
+// Repository functions (no auth or validation).
 export const orgInvitesRepo = {
+  // Lookup by internal id.
   async getById(id: string, db: Db = prisma): Promise<OrgInvitation | null> {
     return db.orgInvitation.findUnique({ where: { id } })
   },
 
+  // Lookup by Clerk invitation id.
   async getByClerkInvitationId(clerkInvitationId: string, db: Db = prisma) {
     return db.orgInvitation.findUnique({ where: { clerkInvitationId } })
   },
 
+  // List invites for an org with optional status filter.
   async listByOrg(
     orgId: string,
     input?: { status?: OrgInviteStatus; take?: number; skip?: number },
@@ -47,6 +56,7 @@ export const orgInvitesRepo = {
     })
   },
 
+  // Lookup the most recent invite by org + email.
   async getByOrgAndEmail(orgId: string, email: string, db: Db = prisma) {
     return db.orgInvitation.findFirst({
       where: { orgId, email },
@@ -54,6 +64,7 @@ export const orgInvitesRepo = {
     })
   },
 
+  // Create a new invite record.
   async create(data: CreateOrgInviteInput, db: Db = prisma): Promise<OrgInvitation> {
     return db.orgInvitation.create({
       data: {
@@ -71,6 +82,7 @@ export const orgInvitesRepo = {
     })
   },
 
+  // Update invite by internal id.
   async updateById(
     id: string,
     data: Partial<UpsertOrgInviteInput> & {
@@ -94,6 +106,7 @@ export const orgInvitesRepo = {
     })
   },
 
+  // Upsert by Clerk invitation id.
   async upsertByClerkInvitationId(
     data: UpsertOrgInviteInput,
     db: Db = prisma
@@ -124,6 +137,7 @@ export const orgInvitesRepo = {
     })
   },
 
+  // Update status by internal id.
   async updateStatusById(
     id: string,
     status: OrgInviteStatus,
@@ -135,6 +149,7 @@ export const orgInvitesRepo = {
     })
   },
 
+  // Update status by Clerk invitation id.
   async updateStatusByClerkInvitationId(
     clerkInvitationId: string,
     status: OrgInviteStatus,
@@ -146,6 +161,7 @@ export const orgInvitesRepo = {
     })
   },
 
+  // Update status by org + email (pending invites only).
   async updateStatusByOrgAndEmail(
     orgId: string,
     email: string,
@@ -157,5 +173,4 @@ export const orgInvitesRepo = {
       data: { status, ...timestamps },
     })
   },
-
 }

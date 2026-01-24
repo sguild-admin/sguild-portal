@@ -1,5 +1,7 @@
 "use client"
 
+// app/portal/_components/org-change-refresh.tsx
+// Refresh portal view when the active org changes.
 import { useEffect, useRef } from "react"
 import { useAuth } from "@clerk/nextjs"
 import { useRouter } from "next/navigation"

@@ -1,4 +1,5 @@
 // modules/webhooks/webhooks.actions.ts
+// Orchestrates webhook processing and dispatches to domain services.
 import "server-only"
 
 import type { AppCtx } from "@/modules/_shared/ctx"
@@ -12,16 +13,19 @@ import { usersService } from "@/modules/users/users.service"
 import { extractInvitation, extractMembership, extractOrganization, extractUser } from "@/modules/webhooks/clerk.webhooks"
 import { MembershipStatus, OrgRole } from "@prisma/client"
 
+// Minimal Clerk event shape we rely on.
 type ClerkEvent = {
   id?: string
   type: string
   data: unknown
 }
 
+// Helper to identify deleted events.
 function isDeletedEvent(type: string) {
   return type.endsWith(".deleted")
 }
 
+// Main entrypoint for Clerk webhook events.
 export async function handleClerkEventAction(args: {
   ctx: AppCtx
   eventId: string
@@ -178,7 +182,10 @@ export async function handleClerkEventAction(args: {
           await coachProfilesService.upsertByAppUserId(appUser.id, {})
         }
 
-        if (!deletingMembership && (event.type === "organizationMembership.created" || mem.statusHint === "ACTIVE")) {
+        if (
+          !deletingMembership &&
+          (event.type === "organizationMembership.created" || mem.statusHint === "ACTIVE")
+        ) {
           await orgInvitesService.markAcceptedFromMembership({
             orgId: dbOrg.id,
             acceptedAt: eventCreatedAt,

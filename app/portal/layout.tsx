@@ -1,3 +1,5 @@
+// app/portal/layout.tsx
+// Portal shell with auth/role guards and org switcher.
 import type { ReactNode } from "react"
 import { OrganizationSwitcher, UserButton } from "@clerk/nextjs"
 import { auth, clerkClient } from "@clerk/nextjs/server"
@@ -5,8 +7,10 @@ import { redirect } from "next/navigation"
 import { getMembersMe } from "@/app/portal/_lib/members-me"
 import AutoSetActiveOrg from "@/app/portal/_components/auto-set-org"
 
+// Always run on the server to check auth and membership.
 export const dynamic = "force-dynamic"
 
+// Fetch a small sample to determine if user has any orgs.
 async function getOrgMembershipCount(userId: string) {
   const client = await clerkClient()
   const memberships = await client.users.getOrganizationMembershipList({
@@ -35,7 +39,7 @@ export default async function PortalLayout({ children }: { children: ReactNode }
         <main className="min-h-screen p-6">
           <div className="flex items-center justify-between">
             <h1 className="text-xl font-semibold">Portal</h1>
-            <UserButton signInUrl="/sign-in" signUpUrl="/sign-in" />
+            <UserButton signInUrl="/sign-in" />
           </div>
 
           <div className="mt-10 max-w-xl space-y-4">
@@ -118,7 +122,7 @@ export default async function PortalLayout({ children }: { children: ReactNode }
                   hidePersonal
                 />
               ) : null}
-              <UserButton signInUrl="/sign-in" signUpUrl="/sign-in" />
+              <UserButton signInUrl="/sign-in" />
             </div>
           </div>
 
@@ -152,7 +156,7 @@ export default async function PortalLayout({ children }: { children: ReactNode }
               hidePersonal
             />
           ) : null}
-          <UserButton signInUrl="/sign-in" signUpUrl="/sign-in" />
+          <UserButton signInUrl="/sign-in" />
         </div>
       </div>
       <AutoSetActiveOrg />

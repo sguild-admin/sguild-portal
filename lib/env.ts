@@ -1,15 +1,19 @@
 // lib/env.ts
+// Centralized environment variable access with validation.
+// Read a required env var or throw with a clear message.
 function requireEnv(name: string): string {
   const v = process.env[name]
   if (!v || v.trim().length === 0) throw new Error(`Missing env var: ${name}`)
   return v
 }
 
+// Read an optional env var and normalize empty strings.
 function optionalEnv(name: string): string | undefined {
   const v = process.env[name]
   return v && v.trim().length > 0 ? v : undefined
 }
 
+// Frozen env object for predictable access across the app.
 export const env = Object.freeze({
   NODE_ENV: (process.env.NODE_ENV ?? "development") as
     | "development"

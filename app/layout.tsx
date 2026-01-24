@@ -1,4 +1,5 @@
 // app/layout.tsx
+// Root layout and global providers.
 import type { Metadata } from "next"
 import { ClerkProvider } from "@clerk/nextjs"
 import "./globals.css"
@@ -8,6 +9,7 @@ export const metadata: Metadata = {
   description: "Sguild",
 }
 
+// Wrap the app with Clerk provider and global styles.
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <ClerkProvider signInUrl="/sign-in" signUpUrl="/sign-in">

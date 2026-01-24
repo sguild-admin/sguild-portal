@@ -1,9 +1,12 @@
+// modules/orgInvites/orgInvites.actions.ts
+// Server actions for org invitation flows.
 import "server-only"
 
 import { clerkClient } from "@clerk/nextjs/server"
 import { OrgInviteStatus, OrgRole } from "@prisma/client"
 import { randomUUID } from "node:crypto"
 import { authzService, HttpError } from "@/modules/authz/authz.service"
+import { asInt, getQuery } from "@/modules/_shared/http"
 import { orgInvitesService } from "@/modules/orgInvites/orgInvites.service"
 import {
   CreateOrgInviteBodySchema,
@@ -12,30 +15,27 @@ import {
 } from "@/modules/orgInvites/orgInvites.schema"
 import { toOrgInviteDTO } from "@/modules/orgInvites/orgInvites.dto"
 
-function parseIntParam(v: string | null, fallback: number) {
-  if (!v) return fallback
-  const n = Number.parseInt(v, 10)
-  return Number.isFinite(n) ? n : fallback
-}
-
+// Map app OrgRole to Clerk org role string.
 function mapOrgRoleToClerkRole(role: OrgRole): string {
   return role === OrgRole.ADMIN ? "org:admin" : "org:member"
 }
 
+// List invites for the active org (admin only).
 export async function listOrgInvitesAction(request: Request) {
   const { org } = await authzService.requireAdmin()
 
-  const url = new URL(request.url)
-  const take = Math.min(parseIntParam(url.searchParams.get("take"), 100), 200)
-  const skip = Math.max(parseIntParam(url.searchParams.get("skip"), 0), 0)
-  const status = url.searchParams.get("status") ?? undefined
+  const params = getQuery(request)
+  const take = Math.min(asInt(params.get("take"), 100), 200)
+  const skip = Math.max(asInt(params.get("skip"), 0), 0)
+  const status = params.get("status") ?? undefined
 
-  const query = ListOrgInvitesQuerySchema.parse({ status, take, skip })
-  const invites = await orgInvitesService.listByOrg(org.id, query)
+  const input = ListOrgInvitesQuerySchema.parse({ status, take, skip })
+  const invites = await orgInvitesService.listByOrg(org.id, input)
 
   return { invites: invites.map(toOrgInviteDTO) }
 }
 
+// Create or update an org invite via Clerk.
 export async function createOrgInviteAction(body: unknown) {
   const { org, clerkOrgId, clerkUserId } = await authzService.requireAdmin()
   const data = CreateOrgInviteBodySchema.parse(body)
@@ -94,6 +94,7 @@ export async function createOrgInviteAction(body: unknown) {
   return { invite: toOrgInviteDTO(created) }
 }
 
+// Fetch a single invite by id (admin only).
 export async function getOrgInviteByIdAction(inviteId: string) {
   const { org } = await authzService.requireAdmin()
 
@@ -105,6 +106,7 @@ export async function getOrgInviteByIdAction(inviteId: string) {
   return { invite: toOrgInviteDTO(invite) }
 }
 
+// Revoke an invite via Clerk and update local record.
 export async function revokeOrgInviteAction(clerkInvitationId: string, body: unknown) {
   const { org, clerkOrgId, clerkUserId } = await authzService.requireAdmin()
   PatchOrgInviteBodySchema.parse(body)
@@ -129,6 +131,7 @@ export async function revokeOrgInviteAction(clerkInvitationId: string, body: unk
   return { invite: toOrgInviteDTO(updated) }
 }
 
+// Resend an invite via Clerk and update local record.
 export async function resendOrgInviteAction(clerkInvitationId: string) {
   const { org, clerkOrgId, clerkUserId } = await authzService.requireAdmin()
 

@@ -1,4 +1,5 @@
 // modules/members/members.routes.ts
+// Thin HTTP layer for members endpoints.
 import "server-only"
 
 import type { NextRequest } from "next/server"
@@ -10,6 +11,7 @@ import {
   patchMemberByClerkUserIdAction,
 } from "./members.actions"
 
+// Next.js route context type helper.
 type Ctx<P> = { params: P | Promise<P> }
 
 // GET /api/members

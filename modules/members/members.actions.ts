@@ -1,39 +1,31 @@
 // modules/members/members.actions.ts
+// Server actions for listing and managing org memberships.
 import "server-only"
 
 import { MembershipStatus, OrgRole } from "@prisma/client"
 import { authzService, HttpError } from "@/modules/authz/authz.service"
+import { asEnum, asInt, getQuery } from "@/modules/_shared/http"
 import { membersService } from "@/modules/members/members.service"
 import { ListMembersQuerySchema, PatchMemberBodySchema } from "./members.schema"
 import { toMemberDTO } from "./members.dto"
 
-function parseIntParam(v: string | null, fallback: number) {
-  if (!v) return fallback
-  const n = Number.parseInt(v, 10)
-  return Number.isFinite(n) ? n : fallback
-}
-
-function parseEnum<T extends Record<string, string>>(e: T, v: string | null): T[keyof T] | undefined {
-  if (!v) return undefined
-  const values = Object.values(e)
-  return values.includes(v) ? (v as T[keyof T]) : undefined
-}
-
+// List members for the active org (admin only).
 export async function listMembersAction(request: Request) {
   const { org } = await authzService.requireAdmin()
 
-  const url = new URL(request.url)
-  const role = parseEnum(OrgRole, url.searchParams.get("role"))
-  const status = parseEnum(MembershipStatus, url.searchParams.get("status"))
-  const take = Math.min(parseIntParam(url.searchParams.get("take"), 100), 200)
-  const skip = Math.max(parseIntParam(url.searchParams.get("skip"), 0), 0)
+  const query = getQuery(request)
+  const role = asEnum(OrgRole, query.get("role"))
+  const status = asEnum(MembershipStatus, query.get("status"))
+  const take = Math.min(asInt(query.get("take"), 100), 200)
+  const skip = Math.max(asInt(query.get("skip"), 0), 0)
 
-  const query = ListMembersQuerySchema.parse({ role, status, take, skip })
-  const members = await membersService.listByOrg(org.id, query)
+  const input = ListMembersQuerySchema.parse({ role, status, take, skip })
+  const members = await membersService.listByOrg(org.id, input)
 
   return { members: members.map(toMemberDTO) }
 }
 
+// Return membership and org info for current user.
 export async function getMeAction() {
   await authzService.requireUserId()
   const access = await authzService.requireOrgAccess()
@@ -43,6 +35,7 @@ export async function getMeAction() {
   }
 }
 
+// Fetch a member by Clerk user id (admin only).
 export async function getMemberByClerkUserIdAction(clerkUserId: string) {
   const { org } = await authzService.requireAdmin()
 
@@ -52,6 +45,7 @@ export async function getMemberByClerkUserIdAction(clerkUserId: string) {
   return { member: toMemberDTO(member) }
 }
 
+// Patch a member's role/status (admin only).
 export async function patchMemberByClerkUserIdAction(clerkUserId: string, body: unknown) {
   const { org } = await authzService.requireAdmin()
 

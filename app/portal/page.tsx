@@ -1,6 +1,9 @@
+// app/portal/page.tsx
+// Redirect users to the right portal based on membership role.
 import { redirect } from "next/navigation"
 import { getMembersMe } from "@/app/portal/_lib/members-me"
 
+// Always evaluate on the server for auth checks.
 export const dynamic = "force-dynamic"
 
 export default async function Page() {

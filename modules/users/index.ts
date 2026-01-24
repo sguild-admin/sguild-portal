@@ -1,4 +1,5 @@
 // modules/users/index.ts
+// Public exports for the users module.
 export * from "./users.actions"
 export * from "./users.dto"
 export * from "./users.schema"

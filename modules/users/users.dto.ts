@@ -1,6 +1,8 @@
 // modules/users/users.dto.ts
+// DTOs for AppUser records.
 import type { AppUser } from "@prisma/client"
 
+// Public-facing user representation.
 export type AppUserDTO = {
   id: string
   clerkUserId: string
@@ -16,6 +18,7 @@ export type AppUserDTO = {
   updatedAt: Date
 }
 
+// Map Prisma AppUser to AppUserDTO.
 export function toAppUserDTO(u: AppUser): AppUserDTO {
   return {
     id: u.id,

@@ -1,3 +1,5 @@
+// modules/coachProfiles/coachProfiles.actions.ts
+// Server actions for coach profile CRUD.
 import "server-only"
 
 import { authzService } from "@/modules/authz/authz.service"
@@ -6,6 +8,7 @@ import { PatchCoachProfileBodySchema } from "@/modules/coachProfiles/coachProfil
 import { toCoachProfileDTO } from "@/modules/coachProfiles/coachProfiles.dto"
 import { usersService } from "@/modules/users/users.service"
 
+// Fetch the current user's coach profile (if any).
 export async function getMyCoachProfileAction() {
   const { clerkUserId } = await authzService.requireUserId()
   const user = await usersService.getOrCreateByClerkUserId(clerkUserId)
@@ -16,6 +19,7 @@ export async function getMyCoachProfileAction() {
   return { profile: toCoachProfileDTO(profile) }
 }
 
+// Create or update the current user's coach profile.
 export async function upsertMyCoachProfileAction(body: unknown) {
   const { clerkUserId } = await authzService.requireUserId()
   const user = await usersService.getOrCreateByClerkUserId(clerkUserId)

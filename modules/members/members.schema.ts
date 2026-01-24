@@ -1,7 +1,9 @@
 // modules/members/members.schema.ts
+// Zod schemas for members endpoints.
 import { z } from "zod"
 import { OrgRole, MembershipStatus } from "@prisma/client"
 
+// Query params for listing members.
 export const ListMembersQuerySchema = z.object({
   role: z.nativeEnum(OrgRole).optional(),
   status: z.nativeEnum(MembershipStatus).optional(),
@@ -9,6 +11,7 @@ export const ListMembersQuerySchema = z.object({
   skip: z.number().int().min(0).default(0),
 })
 
+// Body for patching a member.
 export const PatchMemberBodySchema = z
   .object({
     role: z.nativeEnum(OrgRole).optional(),
