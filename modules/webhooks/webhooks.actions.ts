@@ -8,7 +8,7 @@ import { membersService } from "@/modules/members/members.service"
 import { orgService } from "@/modules/org/org.service"
 import { orgInvitesService } from "@/modules/orgInvites/orgInvites.service"
 import { usersService } from "@/modules/users/users.service"
-import { extractInvitation, extractMembership, extractOrganization } from "@/modules/webhooks/clerk.webhooks"
+import { extractInvitation, extractMembership, extractOrganization, extractUser } from "@/modules/webhooks/clerk.webhooks"
 
 type ClerkEvent = {
   id?: string
@@ -36,9 +36,9 @@ export async function handleClerkEventAction(args: {
     provider: "clerk",
     eventId,
     work: async () => {
-      const clerkUserId = (event as any)?.data?.id
-      if ((event.type === "user.created" || event.type === "user.updated") && typeof clerkUserId === "string") {
-        await usersService.getOrCreateByClerkUserId(clerkUserId)
+      const user = extractUser(event as any)
+      if (user && (event.type === "user.created" || event.type === "user.updated")) {
+        await usersService.upsertFromClerkUser(user)
         return
       }
 
@@ -72,6 +72,13 @@ export async function handleClerkEventAction(args: {
       const mem = extractMembership(event as any)
       if (mem?.clerkOrgId && mem.clerkUserId) {
         const dbOrg = await orgService.getOrCreateByClerkOrgId(mem.clerkOrgId)
+
+        try {
+          const clerkUser = await ctx.clerk.users.getUser(mem.clerkUserId)
+          await usersService.upsertFromClerkUserResource(clerkUser as any)
+        } catch {
+          await usersService.getOrCreateByClerkUserId(mem.clerkUserId)
+        }
 
         await membersService.syncFromClerkMembership({
           action: isDeletedEvent(event.type) ? "delete" : "upsert",

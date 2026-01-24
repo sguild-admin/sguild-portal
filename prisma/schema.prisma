@@ -20,10 +20,26 @@ model Organization {
 }
 
 model AppUser {
-  id          String   @id @default(uuid()) @db.Uuid
-  clerkUserId String   @unique
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id           String   @id @default(uuid()) @db.Uuid
+  clerkUserId  String   @unique @db.Text
+
+  primaryEmail String?  @db.Text
+  firstName    String?  @db.Text
+  lastName     String?  @db.Text
+  displayName  String?  @db.Text
+  phone        String?  @db.Text
+  avatarUrl    String?  @db.Text
+
+  isDisabled   Boolean  @default(false)
+
+  lastSignInAt DateTime?
+  lastSeenAt   DateTime?
+
+  coachProfile CoachProfile?
+  memberships  OrgMembership[]
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
 
 model OrgMembership {
@@ -38,10 +54,24 @@ model OrgMembership {
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
   org         Organization     @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  appUser     AppUser          @relation(fields: [clerkUserId], references: [clerkUserId], onDelete: Cascade)
 
   @@unique([orgId, clerkUserId])
   @@index([clerkUserId])
   @@index([orgId, role, status])
+}
+
+model CoachProfile {
+  id        String   @id @default(uuid()) @db.Uuid
+  appUserId String   @unique @db.Uuid
+  appUser   AppUser  @relation(fields: [appUserId], references: [id], onDelete: Cascade)
+
+  bio       String?  @db.Text
+  notes     String?  @db.Text
+  zip       String?  @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model WebhookEvent {

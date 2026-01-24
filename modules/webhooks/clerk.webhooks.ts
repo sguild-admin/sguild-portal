@@ -17,6 +17,10 @@ export function isOrganizationEvent(evt: ClerkWebhookEvent): boolean {
   return typeof evt?.type === "string" && evt.type.startsWith("organization.")
 }
 
+export function isUserEvent(evt: ClerkWebhookEvent): boolean {
+  return typeof evt?.type === "string" && evt.type.startsWith("user.")
+}
+
 export function isOrganizationMembershipEvent(evt: ClerkWebhookEvent): boolean {
   return typeof evt?.type === "string" && evt.type.startsWith("organizationMembership.")
 }
@@ -33,6 +37,64 @@ export function extractOrganization(
   const clerkOrgId = data?.id
   if (!clerkOrgId) return null
   return { clerkOrgId, name: data?.name }
+}
+
+export function extractUser(
+  evt: ClerkWebhookEvent
+): {
+  clerkUserId: string
+  primaryEmail?: string | null
+  firstName?: string | null
+  lastName?: string | null
+  displayName?: string | null
+  phone?: string | null
+  avatarUrl?: string | null
+  lastSignInAt?: Date | null
+  lastSeenAt?: Date | null
+  isDisabled?: boolean
+} | null {
+  if (!isUserEvent(evt)) return null
+  const data: any = (evt as any).data
+  const clerkUserId = data?.id
+  if (!clerkUserId) return null
+
+  const primaryEmailId = data?.primary_email_address_id
+  const primaryEmail =
+    Array.isArray(data?.email_addresses) && primaryEmailId
+      ? data.email_addresses.find((e: any) => e?.id === primaryEmailId)?.email_address ?? null
+      : null
+
+  const primaryPhoneId = data?.primary_phone_number_id
+  const phone =
+    Array.isArray(data?.phone_numbers) && primaryPhoneId
+      ? data.phone_numbers.find((p: any) => p?.id === primaryPhoneId)?.phone_number ?? null
+      : null
+
+  const firstName = typeof data?.first_name === "string" ? data.first_name : null
+  const lastName = typeof data?.last_name === "string" ? data.last_name : null
+  const username = typeof data?.username === "string" ? data.username : null
+
+  const fullName = [firstName, lastName].filter(Boolean).join(" ").trim()
+  const displayName = fullName || username || null
+
+  const avatarUrl = typeof data?.image_url === "string" ? data.image_url : null
+  const lastSignInAt = typeof data?.last_sign_in_at === "number" ? new Date(data.last_sign_in_at) : null
+  const lastSeenAt = typeof data?.last_active_at === "number" ? new Date(data.last_active_at) : null
+
+  const isDisabled = !!(data?.banned || data?.locked)
+
+  return {
+    clerkUserId,
+    primaryEmail,
+    firstName,
+    lastName,
+    displayName,
+    phone,
+    avatarUrl,
+    lastSignInAt,
+    lastSeenAt,
+    isDisabled,
+  }
 }
 
 export function extractMembership(

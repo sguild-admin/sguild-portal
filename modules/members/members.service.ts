@@ -4,6 +4,7 @@ import "server-only"
 import type { OrgMembership } from "@prisma/client"
 import { MembershipStatus, OrgRole } from "@prisma/client"
 import { membersRepo, type UpsertMembershipInput } from "@/modules/members/members.repo"
+import { usersService } from "@/modules/users/users.service"
 
 export type ClerkMembershipSyncInput =
   | {
@@ -102,6 +103,7 @@ export const membersService = {
   },
 
   async upsert(input: UpsertMembershipInput) {
+    await usersService.getOrCreateByClerkUserId(input.clerkUserId)
     return membersRepo.upsertMembership(input)
   },
 
@@ -112,6 +114,8 @@ export const membersService = {
 
     // If it does not exist, create a disabled record with COACH role as a safe default
     const role = existing?.role ?? OrgRole.COACH
+
+    await usersService.getOrCreateByClerkUserId(clerkUserId)
 
     return membersRepo.upsertMembership({
       orgId,
@@ -130,6 +134,8 @@ export const membersService = {
     if (input.action === "delete") {
       return this.disable(input.orgId, input.clerkUserId, now)
     }
+
+    await usersService.getOrCreateByClerkUserId(input.clerkUserId)
 
     const existing = await membersRepo.getByOrgAndClerkUserId(input.orgId, input.clerkUserId)
 
