@@ -38,23 +38,22 @@ export async function handleClerkEventAction(args: {
     provider: "clerk",
     eventId,
     work: async () => {
-      if (event.type === "user.deleted") {
-        const clerkUserId = (event as any)?.data?.id
-        if (typeof clerkUserId === "string") {
+      const userDeleted =
+        event.type === "user.deleted" ||
+        (event.type === "user.updated" && (event as any)?.data?.deleted === true) ||
+        (event.type.startsWith("user.") && (event as any)?.data?.object === "deleted_object")
+
+      if (userDeleted) {
+        const data: any = (event as any)?.data
+        const clerkUserId =
+          (typeof data?.id === "string" && data.id) ||
+          (typeof data?.user_id === "string" && data.user_id) ||
+          null
+
+        if (clerkUserId) {
           await usersService.deleteByClerkUserId(clerkUserId)
         }
         return
-      }
-
-      if (event.type === "user.updated") {
-        const deleted = (event as any)?.data?.deleted
-        if (deleted === true) {
-          const clerkUserId = (event as any)?.data?.id
-          if (typeof clerkUserId === "string") {
-            await usersService.deleteByClerkUserId(clerkUserId)
-          }
-          return
-        }
       }
 
       if (event.type === "organization.deleted") {
