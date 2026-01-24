@@ -11,7 +11,7 @@ async function getOrgMembershipCount(userId: string) {
   const client = await clerkClient()
   const memberships = await client.users.getOrganizationMembershipList({
     userId,
-    limit: 1,
+    limit: 2,
   })
   return memberships.data.length
 }
@@ -64,12 +64,27 @@ export default async function PortalLayout({ children }: { children: ReactNode }
     throw new Error(me.message)
   }
 
+  const { userId } = await auth()
+  const membershipCount = userId ? await getOrgMembershipCount(userId) : 0
+  const showOrgSwitcher = membershipCount > 1
+
   return (
     <main className="min-h-screen p-6">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Portal</h1>
-        <UserButton />
+        <div className="flex items-center gap-3">
+          {showOrgSwitcher ? (
+            <OrganizationSwitcher
+              afterSelectOrganizationUrl="/portal"
+              afterSelectPersonalUrl="/portal"
+              afterCreateOrganizationUrl="/portal"
+              hidePersonal
+            />
+          ) : null}
+          <UserButton />
+        </div>
       </div>
+      <AutoSetActiveOrg />
       <div className="mt-6">{children}</div>
     </main>
   )
