@@ -10,7 +10,7 @@ import { usersService } from "@/modules/users/users.service"
 import { extractMembership, extractOrganization } from "@/modules/webhooks/clerk.webhooks"
 
 type ClerkEvent = {
-  id: string
+  id?: string
   type: string
   data: unknown
 }
@@ -21,18 +21,19 @@ function isDeletedEvent(type: string) {
 
 export async function handleClerkEventAction(args: {
   ctx: AppCtx
+  eventId: string
   event: ClerkEvent
   eventCreatedAt: Date
 }) {
-  const { ctx, event, eventCreatedAt } = args
+  const { ctx, eventId, event, eventCreatedAt } = args
 
-  if (!event?.id || typeof event.id !== "string") {
+  if (!eventId || typeof eventId !== "string") {
     throw new HttpError(400, "INVALID_WEBHOOK_EVENT", "Missing event id")
   }
 
   const { processed } = await idempotencyService.runOnce(ctx, {
     provider: "clerk",
-    eventId: event.id,
+    eventId,
     work: async () => {
       const clerkUserId = (event as any)?.data?.id
       if ((event.type === "user.created" || event.type === "user.updated") && typeof clerkUserId === "string") {

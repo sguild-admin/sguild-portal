@@ -14,17 +14,25 @@ function getEventCreatedAtFromSvix(request: Request): Date {
   return new Date(n * 1000)
 }
 
+function getEventIdFromSvix(request: Request): string | null {
+  const svixId = request.headers.get("svix-id")
+  if (svixId && svixId.trim()) return svixId
+  return null
+}
+
 export const webhooksRoutes = {
   // POST /api/webhooks/clerk
   async clerk(request: Request) {
     try {
       const evt = await verifyClerkWebhook(request)
       const eventCreatedAt = getEventCreatedAtFromSvix(request)
+      const eventId = (evt as any).id ?? getEventIdFromSvix(request)
 
       const ctx = await buildCtx(request)
 
       await handleClerkEventAction({
         ctx,
+        eventId,
         event: { id: (evt as any).id, type: (evt as any).type, data: (evt as any).data },
         eventCreatedAt,
       })
