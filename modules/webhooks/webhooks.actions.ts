@@ -117,6 +117,21 @@ export async function handleClerkEventAction(args: {
       if (mem?.clerkOrgId && mem.clerkUserId) {
         const dbOrg = await orgService.getOrCreateByClerkOrgId(mem.clerkOrgId)
 
+        let clerkRole = mem.clerkRole ?? null
+        if (!clerkRole) {
+          try {
+            const client = await ctx.clerk()
+            const memberships = await client.users.getOrganizationMembershipList({
+              userId: mem.clerkUserId,
+              limit: 100,
+            })
+            const match = memberships.data.find(m => m.organization?.id === mem.clerkOrgId)
+            clerkRole = typeof match?.role === "string" ? match.role : clerkRole
+          } catch {
+            clerkRole = mem.clerkRole ?? null
+          }
+        }
+
         try {
           const client = await ctx.clerk()
           const clerkUser = await client.users.getUser(mem.clerkUserId)
@@ -129,7 +144,7 @@ export async function handleClerkEventAction(args: {
           action: isDeletedEvent(event.type) ? "delete" : "upsert",
           orgId: dbOrg.id,
           clerkUserId: mem.clerkUserId,
-          clerkRole: mem.clerkRole ?? null,
+          clerkRole,
           clerkStatus: mem.statusHint ?? null,
           eventCreatedAt,
         })
