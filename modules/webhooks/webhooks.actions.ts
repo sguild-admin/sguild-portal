@@ -6,8 +6,9 @@ import { HttpError } from "@/modules/_shared/errors"
 import { idempotencyService } from "@/modules/_shared/idempotency"
 import { membersService } from "@/modules/members/members.service"
 import { orgService } from "@/modules/org/org.service"
+import { orgInvitesService } from "@/modules/orgInvites/orgInvites.service"
 import { usersService } from "@/modules/users/users.service"
-import { extractMembership, extractOrganization } from "@/modules/webhooks/clerk.webhooks"
+import { extractInvitation, extractMembership, extractOrganization } from "@/modules/webhooks/clerk.webhooks"
 
 type ClerkEvent = {
   id?: string
@@ -50,6 +51,24 @@ export async function handleClerkEventAction(args: {
         return
       }
 
+      const invitation = extractInvitation(event as any)
+      if (invitation?.clerkOrgId) {
+        const dbOrg = await orgService.getOrCreateByClerkOrgId(invitation.clerkOrgId)
+
+        await orgInvitesService.upsertFromClerkInvitation({
+          orgId: dbOrg.id,
+          clerkInvitationId: invitation.clerkInvitationId,
+          email: invitation.email,
+          role: invitation.role ?? null,
+          rawStatus: invitation.status ?? null,
+          expiresAt: invitation.expiresAt ?? null,
+          acceptedAt: invitation.status === "accepted" ? eventCreatedAt : null,
+          revokedAt: invitation.status === "revoked" ? eventCreatedAt : null,
+        })
+
+        return
+      }
+
       const mem = extractMembership(event as any)
       if (mem?.clerkOrgId && mem.clerkUserId) {
         const dbOrg = await orgService.getOrCreateByClerkOrgId(mem.clerkOrgId)
@@ -62,6 +81,15 @@ export async function handleClerkEventAction(args: {
           clerkStatus: mem.statusHint ?? null,
           eventCreatedAt,
         })
+
+        if (!isDeletedEvent(event.type) && (event.type === "organizationMembership.created" || mem.statusHint === "ACTIVE")) {
+          await orgInvitesService.markAcceptedFromMembership({
+            orgId: dbOrg.id,
+            acceptedAt: eventCreatedAt,
+            email: mem.email ?? null,
+            metadata: mem.metadata ?? null,
+          })
+        }
       }
     },
   })

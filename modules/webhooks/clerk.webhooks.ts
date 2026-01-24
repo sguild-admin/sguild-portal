@@ -21,6 +21,10 @@ export function isOrganizationMembershipEvent(evt: ClerkWebhookEvent): boolean {
   return typeof evt?.type === "string" && evt.type.startsWith("organizationMembership.")
 }
 
+export function isOrganizationInvitationEvent(evt: ClerkWebhookEvent): boolean {
+  return typeof evt?.type === "string" && evt.type.startsWith("organizationInvitation.")
+}
+
 export function extractOrganization(
   evt: ClerkWebhookEvent
 ): { clerkOrgId: string; name?: string } | null {
@@ -39,6 +43,8 @@ export function extractMembership(
   clerkUserId: string
   clerkRole?: string
   statusHint?: "INVITED" | "ACTIVE" | "DISABLED"
+  email?: string | null
+  metadata?: Record<string, unknown> | null
 } | null {
   if (!isOrganizationMembershipEvent(evt)) return null
   const data: any = (evt as any).data
@@ -54,6 +60,8 @@ export function extractMembership(
 
   const clerkRole = typeof data?.role === "string" ? data.role : undefined
   const statusHint = inferMembershipStatusHint(evt.type, data?.status)
+  const email = typeof data?.public_user_data?.identifier === "string" ? data.public_user_data.identifier : null
+  const metadata = (data?.public_metadata as Record<string, unknown> | null) ?? null
 
   return {
     clerkMembershipId: data?.id,
@@ -61,6 +69,44 @@ export function extractMembership(
     clerkUserId,
     clerkRole,
     statusHint,
+    email,
+    metadata,
+  }
+}
+
+export function extractInvitation(
+  evt: ClerkWebhookEvent
+): {
+  clerkInvitationId: string
+  clerkOrgId: string
+  email: string
+  role?: string
+  status?: string | null
+  expiresAt?: Date | null
+  publicMetadata?: Record<string, unknown> | null
+} | null {
+  if (!isOrganizationInvitationEvent(evt)) return null
+  const data: any = (evt as any).data
+
+  const clerkInvitationId = data?.id
+  const clerkOrgId = data?.organization_id ?? data?.organization?.id
+  const email = data?.email_address
+
+  if (!clerkInvitationId || !clerkOrgId || !email) return null
+
+  const role = typeof data?.role === "string" ? data.role : undefined
+  const status = typeof data?.status === "string" ? data.status : null
+  const expiresAt = typeof data?.expires_at === "number" ? new Date(data.expires_at) : null
+  const publicMetadata = (data?.public_metadata as Record<string, unknown> | null) ?? null
+
+  return {
+    clerkInvitationId,
+    clerkOrgId,
+    email,
+    role,
+    status,
+    expiresAt,
+    publicMetadata,
   }
 }
 

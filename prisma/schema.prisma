@@ -14,6 +14,7 @@ model Organization {
   createdAt               DateTime        @default(now())
   updatedAt               DateTime        @updatedAt
   members                 OrgMembership[]
+  invitations             OrgInvitation[]
 
   @@index([primaryAdminClerkUserId])
 }
@@ -54,6 +55,27 @@ model WebhookEvent {
   @@index([provider, receivedAt])
 }
 
+model OrgInvitation {
+  id                String          @id @default(uuid()) @db.Uuid
+  orgId             String          @db.Uuid
+  org               Organization    @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  clerkInvitationId String          @unique @db.Text
+  email             String          @db.Text
+  role              String?         @db.Text
+  status            OrgInviteStatus @default(PENDING)
+
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  lastSentAt        DateTime?
+  expiresAt         DateTime?
+  acceptedAt        DateTime?
+  revokedAt         DateTime?
+
+  @@index([orgId, email])
+  @@index([orgId, status])
+}
+
 enum OrgRole {
   ADMIN
   COACH
@@ -63,4 +85,11 @@ enum MembershipStatus {
   INVITED
   ACTIVE
   DISABLED
+}
+
+enum OrgInviteStatus {
+  PENDING
+  ACCEPTED
+  REVOKED
+  EXPIRED
 }
