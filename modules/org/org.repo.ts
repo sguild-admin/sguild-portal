@@ -37,6 +37,14 @@ export const orgRepo = {
     })
   },
 
+  async ensureSettings(orgId: string, db: Db = prisma) {
+    return db.orgSettings.upsert({
+      where: { orgId },
+      create: { orgId },
+      update: {},
+    })
+  },
+
   async setPrimaryAdmin(
     orgId: string,
     clerkUserId: string | null,

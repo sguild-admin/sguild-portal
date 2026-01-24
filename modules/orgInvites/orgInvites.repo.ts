@@ -54,14 +54,6 @@ export const orgInvitesRepo = {
     })
   },
 
-  async listByEmailWithOrg(email: string, db: Db = prisma) {
-    return db.orgInvitation.findMany({
-      where: { email },
-      include: { org: true },
-      orderBy: { createdAt: "desc" },
-    })
-  },
-
   async create(data: CreateOrgInviteInput, db: Db = prisma): Promise<OrgInvitation> {
     return db.orgInvitation.create({
       data: {
@@ -166,12 +158,4 @@ export const orgInvitesRepo = {
     })
   },
 
-  async deleteByEmail(email: string, db: Db = prisma): Promise<void> {
-    await db.orgInvitation.deleteMany({ where: { email } })
-  },
-
-  async deleteByClerkInvitationIds(ids: string[], db: Db = prisma): Promise<void> {
-    if (!ids.length) return
-    await db.orgInvitation.deleteMany({ where: { clerkInvitationId: { in: ids } } })
-  },
 }

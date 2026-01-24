@@ -15,18 +15,25 @@ export const orgService = {
 
   async getOrCreateByClerkOrgId(clerkOrgId: string): Promise<Organization> {
     const existing = await orgRepo.getByClerkOrgId(clerkOrgId)
-    if (existing) return existing
+    if (existing) {
+      await orgRepo.ensureSettings(existing.id)
+      return existing
+    }
 
     // Minimal safe fallback. Webhooks will later update name.
-    return orgRepo.upsertByClerkOrgId({
+    const created = await orgRepo.upsertByClerkOrgId({
       clerkOrgId,
       name: "New Organization",
     })
+    await orgRepo.ensureSettings(created.id)
+    return created
   },
 
   async upsertFromClerk(input: { clerkOrgId: string; name: string }): Promise<Organization> {
     const data: UpsertOrgInput = { clerkOrgId: input.clerkOrgId, name: input.name }
-    return orgRepo.upsertByClerkOrgId(data)
+    const org = await orgRepo.upsertByClerkOrgId(data)
+    await orgRepo.ensureSettings(org.id)
+    return org
   },
 
   async setPrimaryAdmin(orgId: string, clerkUserId: string | null) {
