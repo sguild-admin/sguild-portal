@@ -3,6 +3,9 @@ import { OrganizationSwitcher, UserButton } from "@clerk/nextjs"
 import { auth, clerkClient } from "@clerk/nextjs/server"
 import { redirect } from "next/navigation"
 import { getMembersMe } from "@/app/portal/_lib/members-me"
+import AutoSetActiveOrg from "@/app/portal/_components/auto-set-org"
+
+export const dynamic = "force-dynamic"
 
 async function getOrgMembershipCount(userId: string) {
   const client = await clerkClient()
@@ -36,6 +39,7 @@ export default async function PortalLayout({ children }: { children: ReactNode }
           </div>
 
           <div className="mt-10 max-w-xl space-y-4">
+            <AutoSetActiveOrg />
             <div className="space-y-2">
               <h2 className="text-lg font-semibold">
                 {hasOrgs ? "Select an organization to continue" : "No organization assigned"}
@@ -46,7 +50,12 @@ export default async function PortalLayout({ children }: { children: ReactNode }
                   : "Ask an admin to invite you to an organization."}
               </p>
             </div>
-            <OrganizationSwitcher />
+            <OrganizationSwitcher
+              afterSelectOrganizationUrl="/portal"
+              afterSelectPersonalUrl="/portal"
+              afterCreateOrganizationUrl="/portal"
+              hidePersonal
+            />
           </div>
         </main>
       )

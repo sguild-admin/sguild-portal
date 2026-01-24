@@ -4,11 +4,13 @@ import "server-only"
 import type { AppCtx } from "@/modules/_shared/ctx"
 import { HttpError } from "@/modules/_shared/errors"
 import { idempotencyService } from "@/modules/_shared/idempotency"
+import { coachProfilesService } from "@/modules/coachProfiles/coachProfiles.service"
 import { membersService } from "@/modules/members/members.service"
 import { orgService } from "@/modules/org/org.service"
 import { orgInvitesService } from "@/modules/orgInvites/orgInvites.service"
 import { usersService } from "@/modules/users/users.service"
 import { extractInvitation, extractMembership, extractOrganization, extractUser } from "@/modules/webhooks/clerk.webhooks"
+import { MembershipStatus, OrgRole } from "@prisma/client"
 
 type ClerkEvent = {
   id?: string
@@ -81,7 +83,7 @@ export async function handleClerkEventAction(args: {
           await usersService.getOrCreateByClerkUserId(mem.clerkUserId)
         }
 
-        await membersService.syncFromClerkMembership({
+        const membership = await membersService.syncFromClerkMembership({
           action: isDeletedEvent(event.type) ? "delete" : "upsert",
           orgId: dbOrg.id,
           clerkUserId: mem.clerkUserId,
@@ -89,6 +91,15 @@ export async function handleClerkEventAction(args: {
           clerkStatus: mem.statusHint ?? null,
           eventCreatedAt,
         })
+
+        if (
+          !isDeletedEvent(event.type) &&
+          membership.role === OrgRole.COACH &&
+          membership.status === MembershipStatus.ACTIVE
+        ) {
+          const appUser = await usersService.getOrCreateByClerkUserId(mem.clerkUserId)
+          await coachProfilesService.upsertByAppUserId(appUser.id, {})
+        }
 
         if (!isDeletedEvent(event.type) && (event.type === "organizationMembership.created" || mem.statusHint === "ACTIVE")) {
           await orgInvitesService.markAcceptedFromMembership({
