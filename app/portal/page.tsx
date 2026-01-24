@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation"
 import { getMembersMe } from "@/app/portal/_lib/members-me"
 
+export const dynamic = "force-dynamic"
+
 export default async function Page() {
   const me = await getMembersMe()
 

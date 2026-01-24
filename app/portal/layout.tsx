@@ -4,6 +4,7 @@ import { auth, clerkClient } from "@clerk/nextjs/server"
 import { redirect } from "next/navigation"
 import { getMembersMe } from "@/app/portal/_lib/members-me"
 import AutoSetActiveOrg from "@/app/portal/_components/auto-set-org"
+import OrgChangeRefresh from "@/app/portal/_components/org-change-refresh"
 
 export const dynamic = "force-dynamic"
 
@@ -61,6 +62,61 @@ export default async function PortalLayout({ children }: { children: ReactNode }
       )
     }
 
+    if (me.code === "ORG_NOT_PROVISIONED") {
+      return (
+        <main className="min-h-screen p-6">
+          <div className="flex items-center justify-between">
+            <h1 className="text-xl font-semibold">Portal</h1>
+            <UserButton />
+          </div>
+
+          <div className="mt-10 max-w-xl space-y-2">
+            <h2 className="text-lg font-semibold">Organization not provisioned</h2>
+            <p className="text-sm text-muted-foreground">
+              This organization hasn&apos;t been fully set up yet. Please contact an admin or support.
+            </p>
+          </div>
+        </main>
+      )
+    }
+
+    if (me.code === "NO_MEMBERSHIP") {
+      return (
+        <main className="min-h-screen p-6">
+          <div className="flex items-center justify-between">
+            <h1 className="text-xl font-semibold">Portal</h1>
+            <UserButton />
+          </div>
+
+          <div className="mt-10 max-w-xl space-y-2">
+            <h2 className="text-lg font-semibold">Access not configured</h2>
+            <p className="text-sm text-muted-foreground">
+              Your account is in this organization, but access hasn&apos;t been configured yet.
+              Please contact an admin.
+            </p>
+          </div>
+        </main>
+      )
+    }
+
+    if (me.code === "MEMBERSHIP_DISABLED" || me.code === "USER_DISABLED") {
+      return (
+        <main className="min-h-screen p-6">
+          <div className="flex items-center justify-between">
+            <h1 className="text-xl font-semibold">Portal</h1>
+            <UserButton />
+          </div>
+
+          <div className="mt-10 max-w-xl space-y-2">
+            <h2 className="text-lg font-semibold">Access disabled</h2>
+            <p className="text-sm text-muted-foreground">
+              Your access to this organization is disabled. Please contact an admin.
+            </p>
+          </div>
+        </main>
+      )
+    }
+
     throw new Error(me.message)
   }
 
@@ -85,6 +141,7 @@ export default async function PortalLayout({ children }: { children: ReactNode }
         </div>
       </div>
       <AutoSetActiveOrg />
+      <OrgChangeRefresh />
       <div className="mt-6">{children}</div>
     </main>
   )

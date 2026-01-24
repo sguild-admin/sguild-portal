@@ -7,6 +7,7 @@ import { MembershipStatus, OrgRole } from "@prisma/client"
 
 import { orgService } from "@/modules/org/org.service"
 import { membersService } from "@/modules/members/members.service"
+import { usersService } from "@/modules/users/users.service"
 import { HttpError } from "@/modules/_shared/errors"
 
 type ClerkContext = {
@@ -41,7 +42,7 @@ function assertActiveMembership(m: OrgMembership | null): asserts m is OrgMember
     throw new HttpError(403, "NO_MEMBERSHIP", "No membership for this organization")
   }
   if (m.status !== MembershipStatus.ACTIVE) {
-    throw new HttpError(403, "MEMBERSHIP_NOT_ACTIVE", "Membership is not active", {
+    throw new HttpError(403, "MEMBERSHIP_DISABLED", "Membership is disabled", {
       status: m.status,
     })
   }
@@ -49,7 +50,7 @@ function assertActiveMembership(m: OrgMembership | null): asserts m is OrgMember
 
 function assertRole(m: OrgMembership, roles: OrgRole[]) {
   if (!roles.includes(m.role)) {
-    throw new HttpError(403, "INSUFFICIENT_ROLE", "Insufficient role", {
+    throw new HttpError(403, "FORBIDDEN", "Insufficient role", {
       required: roles,
       actual: m.role,
     })
@@ -80,10 +81,19 @@ export const authzService = {
 
     const roles = input?.roles
 
-    const org = await orgService.getOrCreateByClerkOrgId(clerkOrgId)
+    const org = await orgService.getByClerkOrgId(clerkOrgId)
+    if (!org) {
+      throw new HttpError(404, "ORG_NOT_PROVISIONED", "Organization not provisioned")
+    }
 
     const membership = await membersService.getByOrgAndClerkUserId(org.id, clerkUserId)
     assertActiveMembership(membership)
+
+    const appUser = await usersService.getByClerkUserId(clerkUserId)
+    if (appUser?.isDisabled) {
+      throw new HttpError(403, "USER_DISABLED", "User is disabled")
+    }
+
     if (roles?.length) assertRole(membership, roles)
 
     return { clerkUserId, clerkOrgId, org, membership }

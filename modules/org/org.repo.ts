@@ -38,7 +38,9 @@ export const orgRepo = {
   },
 
   async ensureSettings(orgId: string, db: Db = prisma) {
-    return db.orgSettings.upsert({
+    const delegate = (db as typeof prisma & { orgSettings?: typeof prisma.orgSettings }).orgSettings
+    if (!delegate) return null
+    return delegate.upsert({
       where: { orgId },
       create: { orgId },
       update: {},
