@@ -66,7 +66,7 @@ export default async function PortalLayout({ children }: { children: ReactNode }
 
   const { userId } = await auth()
   const membershipCount = userId ? await getOrgMembershipCount(userId) : 0
-  const showOrgSwitcher = membershipCount > 1
+  const showOrgSwitcher = membershipCount > 0
 
   return (
     <main className="min-h-screen p-6">

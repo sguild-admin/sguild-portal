@@ -53,28 +53,30 @@ export async function handleClerkEventAction(args: {
         if (clerkUserId) {
           const appUser = await usersService.getByClerkUserId(clerkUserId)
 
-          try {
-            const client = await ctx.clerk()
-            const invites = await client.users.getOrganizationInvitationList({
-              userId: clerkUserId,
-              status: "pending",
-              limit: 100,
-            })
-            const inviteIds = invites.data.map(i => i.id)
+          if (appUser?.primaryEmail) {
+            try {
+              const client = await ctx.clerk()
+              const pendingInvites = await orgInvitesService.listByEmailWithOrg(appUser.primaryEmail)
+              const inviteIds: string[] = []
 
-            for (const invite of invites.data) {
-              await client.organizations.revokeOrganizationInvitation({
-                organizationId: invite.organizationId,
-                invitationId: invite.id,
-              })
+              for (const invite of pendingInvites) {
+                if (!invite.org?.clerkOrgId) continue
+                inviteIds.push(invite.clerkInvitationId)
+                try {
+                  await client.organizations.revokeOrganizationInvitation({
+                    organizationId: invite.org.clerkOrgId,
+                    invitationId: invite.clerkInvitationId,
+                  })
+                } catch {
+                  // Ignore non-revocable statuses.
+                }
+              }
+
+              await orgInvitesService.deleteByClerkInvitationIds(inviteIds)
+            } catch {
+              // Swallow Clerk errors; we'll still remove DB invites by email.
             }
 
-            await orgInvitesService.deleteByClerkInvitationIds(inviteIds)
-          } catch {
-            // Swallow Clerk errors; we'll still remove DB invites by email.
-          }
-
-          if (appUser?.primaryEmail) {
             await orgInvitesService.deleteByEmail(appUser.primaryEmail)
           }
 

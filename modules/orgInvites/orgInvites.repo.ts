@@ -54,6 +54,14 @@ export const orgInvitesRepo = {
     })
   },
 
+  async listByEmailWithOrg(email: string, db: Db = prisma) {
+    return db.orgInvitation.findMany({
+      where: { email },
+      include: { org: true },
+      orderBy: { createdAt: "desc" },
+    })
+  },
+
   async create(data: CreateOrgInviteInput, db: Db = prisma): Promise<OrgInvitation> {
     return db.orgInvitation.create({
       data: {
