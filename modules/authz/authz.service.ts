@@ -2,7 +2,7 @@
 // Centralized authorization helpers for Clerk-authenticated requests.
 import "server-only"
 
-import { auth } from "@clerk/nextjs/server"
+import { auth, clerkClient } from "@clerk/nextjs/server"
 import type { Organization, OrgMembership } from "@prisma/client"
 import { MembershipStatus, OrgRole } from "@prisma/client"
 
@@ -95,7 +95,29 @@ export const authzService = {
       throw new HttpError(404, "ORG_NOT_PROVISIONED", "Organization not provisioned")
     }
 
-    const membership = await membersService.getByOrgAndClerkUserId(org.id, clerkUserId)
+    let membership = await membersService.getByOrgAndClerkUserId(org.id, clerkUserId)
+    if (!membership) {
+      try {
+        const client = await clerkClient()
+        const memberships = await client.users.getOrganizationMembershipList({
+          userId: clerkUserId,
+          limit: 100,
+        })
+        const match = memberships.data.find(m => m.organization?.id === clerkOrgId)
+        if (match) {
+          await membersService.syncFromClerkMembership({
+            action: "upsert",
+            orgId: org.id,
+            clerkUserId,
+            clerkRole: typeof match.role === "string" ? match.role : null,
+            clerkStatus: null,
+          })
+          membership = await membersService.getByOrgAndClerkUserId(org.id, clerkUserId)
+        }
+      } catch {
+        // ignore and fall through to standard checks
+      }
+    }
     assertActiveMembership(membership)
 
     const appUser = await usersService.getByClerkUserId(clerkUserId)

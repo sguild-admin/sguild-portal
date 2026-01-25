@@ -28,7 +28,7 @@ type CoachDetailsPaneProps = {
   displayName: string
   headerName: string
   email: string
-  status: "ACTIVE" | "DISABLED" | "INVITED"
+  status: "ACTIVE" | "DISABLED" | "INVITED" | "PENDING"
   membershipStatusLabel: string
   profileDraft: CoachProfile
   onDisplayNameChange: (value: string) => void
@@ -41,15 +41,24 @@ type CoachDetailsPaneProps = {
   onResendInvite: () => void
 }
 
-function StatusChip({ status }: { status: "ACTIVE" | "DISABLED" | "INVITED" }) {
+function StatusChip({ status }: { status: "ACTIVE" | "DISABLED" | "INVITED" | "PENDING" }) {
   const styles =
     status === "ACTIVE"
       ? "border-emerald-200 bg-emerald-50 text-emerald-700"
       : status === "DISABLED"
         ? "border-rose-200 bg-rose-50 text-rose-700"
-        : "border-amber-200 bg-amber-50 text-amber-700"
+        : status === "PENDING"
+          ? "border-amber-200 bg-amber-50 text-amber-700"
+          : "border-indigo-200 bg-indigo-50 text-indigo-700"
 
-  const label = status === "ACTIVE" ? "Enabled" : status === "DISABLED" ? "Disabled" : "Invited"
+  const label =
+    status === "ACTIVE"
+      ? "Enabled"
+      : status === "DISABLED"
+        ? "Disabled"
+        : status === "PENDING"
+          ? "Pending"
+          : "Invited"
 
   return (
     <span className={cn("rounded-full border px-2.5 py-1 text-xs font-medium", styles)}>
@@ -88,9 +97,7 @@ export default function CoachDetailsPane({
   const hasSelection = !!selectedMember || !!selectedInvite
 
   // One source of truth for the header UI
-  const headerStatus: "ACTIVE" | "DISABLED" | "INVITED" = selectedInvite
-    ? "INVITED"
-    : selectedMember?.status ?? "DISABLED"
+  const headerStatus: "ACTIVE" | "DISABLED" | "INVITED" | "PENDING" = status
 
   const isEnabled = headerStatus === "ACTIVE"
 

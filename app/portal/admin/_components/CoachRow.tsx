@@ -5,7 +5,7 @@ type CoachRowProps = {
   id: string
   name: string
   email: string
-  status: "ACTIVE" | "DISABLED" | "INVITED"
+  status: "ACTIVE" | "DISABLED" | "INVITED" | "PENDING"
   lastSentLabel?: string | null
   isSelected: boolean
   isInvite: boolean

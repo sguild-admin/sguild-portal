@@ -7,7 +7,7 @@ type CoachRowItem = {
   id: string
   name: string
   email: string
-  status: "ACTIVE" | "DISABLED" | "INVITED"
+  status: "ACTIVE" | "DISABLED" | "INVITED" | "PENDING"
   lastSentLabel?: string | null
   isInvite: boolean
 }
@@ -55,6 +55,48 @@ export default function CoachRosterPane({
   onToggleRow,
   onResendInvite,
 }: CoachRosterPaneProps) {
+  const normalizedSearch = search.trim()
+  const hasSearch = normalizedSearch.length > 0
+  const hasItemsForFilter =
+    statusFilter === "ACTIVE"
+      ? activeCount > 0
+      : statusFilter === "INVITED"
+        ? invitedCount > 0
+        : disabledCount > 0
+
+  const emptyState = (() => {
+    if (rows.length > 0) return null
+    if (hasSearch && hasItemsForFilter) {
+      return {
+        title: "No results",
+        body: `No results for “${normalizedSearch}”`,
+        onInvite: undefined as (() => void) | undefined,
+      }
+    }
+
+    if (statusFilter === "INVITED") {
+      return {
+        title: "No pending invites",
+        body: "Invite a coach to get them access to the portal",
+        onInvite: onInviteClick,
+      }
+    }
+
+    if (statusFilter === "DISABLED") {
+      return {
+        title: "No disabled coaches",
+        body: "Disabled coaches will appear here",
+        onInvite: undefined as (() => void) | undefined,
+      }
+    }
+
+    return {
+      title: "No active coaches",
+      body: "Invite your first coach to get started",
+      onInvite: onInviteClick,
+    }
+  })()
+
   return (
     <section className="app-card flex h-140 flex-col overflow-hidden p-5 lg:h-[calc(100vh-240px)]">
       <div className="space-y-3">
@@ -123,13 +165,13 @@ export default function CoachRosterPane({
               </div>
             ))}
           </div>
-        ) : rows.length === 0 ? (
+        ) : emptyState ? (
           <div className="grid h-full place-items-center p-4">
             <div className="w-full max-w-75">
               <EmptyStateCard
-                title="No coaches yet"
-                body="Invite a coach by email. They’ll appear as Invited until they accept."
-                onInvite={onInviteClick}
+                title={emptyState.title}
+                body={emptyState.body}
+                onInvite={emptyState.onInvite}
               />
             </div>
           </div>

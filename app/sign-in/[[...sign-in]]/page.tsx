@@ -7,7 +7,12 @@ export default async function Page() {
     <main className="min-h-screen p-6">
       <div className="app-container grid place-items-center">
         <div className="app-card p-6">
-          <SignIn afterSignInUrl="/portal" />
+          <SignIn
+            path="/sign-in"
+            routing="path"
+            signUpUrl="/sign-up"
+            afterSignInUrl="/portal"
+          />
         </div>
       </div>
     </main>

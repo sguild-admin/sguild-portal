@@ -43,6 +43,7 @@ type OrgInvite = {
   status: "PENDING" | "ACCEPTED" | "REVOKED" | "EXPIRED"
   lastSentAt: string | null
   expiresAt: string | null
+  acceptedAt?: string | null
 }
 
 type ApiOk<T> = { ok: true } & T
@@ -136,6 +137,10 @@ function rosterItemStatus(item: RosterItem): "ACTIVE" | "DISABLED" | "INVITED" {
   return item.member.status
 }
 
+function inviteDisplayStatus(invite: OrgInvite): "INVITED" | "PENDING" {
+  return invite.acceptedAt ? "PENDING" : "INVITED"
+}
+
 function statusLabel(status: "ACTIVE" | "DISABLED" | "INVITED"): string {
   if (status === "INVITED") return "Invited"
   return status === "ACTIVE" ? "Active" : "Disabled"
@@ -194,7 +199,7 @@ export default function CoachRosterManager({
   }, [])
 
   const inviteListUrl = useMemo(() => {
-    const params = new URLSearchParams({ status: "PENDING", take: "50" })
+    const params = new URLSearchParams({ take: "50" })
     return `/api/org-invites?${params.toString()}`
   }, [])
 
@@ -287,7 +292,7 @@ export default function CoachRosterManager({
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           email: trimmedEmail,
-          redirectUrl: `${window.location.origin}/sign-in`,
+          redirectUrl: `${window.location.origin}/sign-up`,
         }),
       })
       const payload = (await res.json()) as ApiOk<unknown> | ApiError
@@ -463,6 +468,11 @@ export default function CoachRosterManager({
     [coaches]
   )
 
+  const visibleInvites = useMemo(
+    () => invites.filter(invite => invite.status === "PENDING" || invite.status === "ACCEPTED"),
+    [invites]
+  )
+
   const rosterItems = useMemo(() => {
     const normalizedSearch = search.trim().toLowerCase()
     const matchesSearch = (item: RosterItem) => {
@@ -474,7 +484,7 @@ export default function CoachRosterManager({
 
     const items: RosterItem[] = []
     if (statusFilter === "INVITED") {
-      items.push(...invites.map(invite => ({ kind: "invite" as const, invite })))
+      items.push(...visibleInvites.map(invite => ({ kind: "invite" as const, invite })))
     } else if (statusFilter === "DISABLED") {
       items.push(...disabledCoaches.map(member => ({ kind: "member" as const, member })))
     } else {
@@ -482,9 +492,9 @@ export default function CoachRosterManager({
     }
 
     return items.filter(matchesSearch)
-  }, [activeCoaches, disabledCoaches, invites, search, statusFilter])
+  }, [activeCoaches, disabledCoaches, visibleInvites, search, statusFilter])
 
-  const totalRosterCount = activeCoaches.length + disabledCoaches.length + invites.length
+  const totalRosterCount = activeCoaches.length + disabledCoaches.length + visibleInvites.length
   const filtersDisabled = totalRosterCount === 0
 
   const handleToggleMembership = async (coach: CoachMember) => {
@@ -507,7 +517,7 @@ export default function CoachRosterManager({
           ? formatPhone(coachPhone(item.member) ?? "")
           : rosterItemEmail(item)
         : rosterItemEmail(item),
-    status: rosterItemStatus(item),
+    status: item.kind === "invite" ? inviteDisplayStatus(item.invite) : rosterItemStatus(item),
     lastSentLabel: item.kind === "invite" ? formatDate(item.invite.lastSentAt) : null,
     isInvite: item.kind === "invite",
     member: item.kind === "member" ? item.member : null,
@@ -516,6 +526,7 @@ export default function CoachRosterManager({
 
   const selectedMember = selectedItem?.kind === "member" ? selectedItem.member : null
   const selectedInvite = selectedItem?.kind === "invite" ? selectedItem.invite : null
+  const selectedInviteStatus = selectedInvite ? inviteDisplayStatus(selectedInvite) : "INVITED"
 
   return (
     <div className="space-y-8">
@@ -544,7 +555,7 @@ export default function CoachRosterManager({
                 statusFilter={statusFilter}
                 onStatusChange={setStatusFilter}
                 activeCount={activeCoaches.length}
-                invitedCount={invites.length}
+                invitedCount={visibleInvites.length}
                 disabledCount={disabledCoaches.length}
                 isLoading={isLoading}
                 rows={rosterRows}
@@ -581,11 +592,11 @@ export default function CoachRosterManager({
                 }
                 selectedInvite={
                   selectedInvite
-                    ? {
-                        status: selectedInvite.status,
-                        lastSentLabel: formatDate(selectedInvite.lastSentAt),
-                        expiresLabel: formatDate(selectedInvite.expiresAt),
-                      }
+                      ? {
+                          status: inviteDisplayStatus(selectedInvite),
+                          lastSentLabel: formatDate(selectedInvite.lastSentAt),
+                          expiresLabel: formatDate(selectedInvite.expiresAt),
+                        }
                     : null
                 }
                 detailsLoading={detailsLoading}
@@ -594,15 +605,13 @@ export default function CoachRosterManager({
                   selectedMember ? coachFullName(selectedMember) : selectedInvite?.email || "Coach"
                 }
                 email={selectedMember ? coachEmail(selectedMember) : "Invite pending"}
-                status={
-                  selectedInvite
-                    ? "INVITED"
-                    : selectedMember
-                      ? selectedMember.status
-                      : "INVITED"
-                }
+                status={selectedInvite ? selectedInviteStatus : selectedMember?.status ?? "INVITED"}
                 membershipStatusLabel={
-                  selectedMember ? statusLabel(selectedMember.status) : "Invited"
+                  selectedMember
+                    ? statusLabel(selectedMember.status)
+                    : selectedInviteStatus === "PENDING"
+                      ? "Pending"
+                      : "Invited"
                 }
                 profileDraft={profileDraft}
                 onProfileChange={setProfileDraft}
@@ -629,7 +638,7 @@ export default function CoachRosterManager({
             statusFilter={statusFilter}
             onStatusChange={setStatusFilter}
             activeCount={activeCoaches.length}
-            invitedCount={invites.length}
+            invitedCount={visibleInvites.length}
             disabledCount={disabledCoaches.length}
             isLoading={isLoading}
             rows={rosterRows}
@@ -668,7 +677,7 @@ export default function CoachRosterManager({
           statusFilter={statusFilter}
           onStatusChange={setStatusFilter}
           activeCount={activeCoaches.length}
-          invitedCount={invites.length}
+          invitedCount={visibleInvites.length}
           disabledCount={disabledCoaches.length}
           isLoading={isLoading}
           rows={rosterRows}
@@ -704,7 +713,7 @@ export default function CoachRosterManager({
           selectedInvite={
             selectedInvite
               ? {
-                  status: selectedInvite.status,
+                  status: inviteDisplayStatus(selectedInvite),
                   lastSentLabel: formatDate(selectedInvite.lastSentAt),
                   expiresLabel: formatDate(selectedInvite.expiresAt),
                 }
@@ -716,14 +725,14 @@ export default function CoachRosterManager({
             selectedMember ? coachFullName(selectedMember) : selectedInvite?.email || "Coach"
           }
           email={selectedMember ? coachEmail(selectedMember) : "Invite pending"}
-          status={
-            selectedInvite
-              ? "INVITED"
-              : selectedMember
-                ? selectedMember.status
-                : "INVITED"
+          status={selectedInvite ? selectedInviteStatus : selectedMember?.status ?? "INVITED"}
+          membershipStatusLabel={
+            selectedMember
+              ? statusLabel(selectedMember.status)
+              : selectedInviteStatus === "PENDING"
+                ? "Pending"
+                : "Invited"
           }
-          membershipStatusLabel={selectedMember ? statusLabel(selectedMember.status) : "Invited"}
           profileDraft={profileDraft}
           onProfileChange={setProfileDraft}
           isProfileDirty={isProfileDirty}
