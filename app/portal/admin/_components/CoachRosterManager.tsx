@@ -161,9 +161,7 @@ export default function CoachRosterManager({
   const [error, setError] = useState<string | null>(null)
 
   const [search, setSearch] = useState("")
-  const [statusFilter, setStatusFilter] = useState<"ACTIVE" | "INVITED" | "DISABLED">(
-    "ACTIVE"
-  )
+  const [statusFilter, setStatusFilter] = useState<"ACTIVE" | "DISABLED">("ACTIVE")
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null)
 
   const [inviteEmail, setInviteEmail] = useState("")
@@ -292,7 +290,7 @@ export default function CoachRosterManager({
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           email: trimmedEmail,
-          redirectUrl: `${window.location.origin}/sign-up`,
+          redirectUrl: "https://portal.sguildswim.com/sign-up",
         }),
       })
       const payload = (await res.json()) as ApiOk<unknown> | ApiError
@@ -301,12 +299,7 @@ export default function CoachRosterManager({
       }
       setInviteEmail("")
       setInviteName("")
-      const nextInvites = await loadInvites()
-      setStatusFilter("INVITED")
-      const createdInvite = nextInvites.find(invite => invite.email === trimmedEmail)
-      if (createdInvite) {
-        setSelectedItem({ kind: "invite", invite: createdInvite })
-      }
+      await loadInvites()
       setInviteSuccessEmail(trimmedEmail)
       setTimeout(() => {
         onInviteOpenChange(false)
@@ -468,11 +461,6 @@ export default function CoachRosterManager({
     [coaches]
   )
 
-  const visibleInvites = useMemo(
-    () => invites.filter(invite => invite.status === "PENDING" || invite.status === "ACCEPTED"),
-    [invites]
-  )
-
   const rosterItems = useMemo(() => {
     const normalizedSearch = search.trim().toLowerCase()
     const matchesSearch = (item: RosterItem) => {
@@ -483,18 +471,16 @@ export default function CoachRosterManager({
     }
 
     const items: RosterItem[] = []
-    if (statusFilter === "INVITED") {
-      items.push(...visibleInvites.map(invite => ({ kind: "invite" as const, invite })))
-    } else if (statusFilter === "DISABLED") {
+    if (statusFilter === "DISABLED") {
       items.push(...disabledCoaches.map(member => ({ kind: "member" as const, member })))
     } else {
       items.push(...activeCoaches.map(member => ({ kind: "member" as const, member })))
     }
 
     return items.filter(matchesSearch)
-  }, [activeCoaches, disabledCoaches, visibleInvites, search, statusFilter])
+  }, [activeCoaches, disabledCoaches, search, statusFilter])
 
-  const totalRosterCount = activeCoaches.length + disabledCoaches.length + visibleInvites.length
+  const totalRosterCount = activeCoaches.length + disabledCoaches.length
   const filtersDisabled = totalRosterCount === 0
 
   const handleToggleMembership = async (coach: CoachMember) => {
@@ -555,7 +541,6 @@ export default function CoachRosterManager({
                 statusFilter={statusFilter}
                 onStatusChange={setStatusFilter}
                 activeCount={activeCoaches.length}
-                invitedCount={visibleInvites.length}
                 disabledCount={disabledCoaches.length}
                 isLoading={isLoading}
                 rows={rosterRows}
@@ -638,7 +623,6 @@ export default function CoachRosterManager({
             statusFilter={statusFilter}
             onStatusChange={setStatusFilter}
             activeCount={activeCoaches.length}
-            invitedCount={visibleInvites.length}
             disabledCount={disabledCoaches.length}
             isLoading={isLoading}
             rows={rosterRows}
@@ -677,7 +661,6 @@ export default function CoachRosterManager({
           statusFilter={statusFilter}
           onStatusChange={setStatusFilter}
           activeCount={activeCoaches.length}
-          invitedCount={visibleInvites.length}
           disabledCount={disabledCoaches.length}
           isLoading={isLoading}
           rows={rosterRows}

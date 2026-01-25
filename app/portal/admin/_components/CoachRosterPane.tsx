@@ -17,10 +17,9 @@ type CoachRosterPaneProps = {
   search: string
   onSearchChange: (value: string) => void
   filtersDisabled: boolean
-  statusFilter: "ACTIVE" | "INVITED" | "DISABLED"
-  onStatusChange: (value: "ACTIVE" | "INVITED" | "DISABLED") => void
+  statusFilter: "ACTIVE" | "DISABLED"
+  onStatusChange: (value: "ACTIVE" | "DISABLED") => void
   activeCount: number
-  invitedCount: number
   disabledCount: number
   isLoading: boolean
   rows: CoachRowItem[]
@@ -42,7 +41,6 @@ export default function CoachRosterPane({
   statusFilter,
   onStatusChange,
   activeCount,
-  invitedCount,
   disabledCount,
   isLoading,
   rows,
@@ -57,12 +55,7 @@ export default function CoachRosterPane({
 }: CoachRosterPaneProps) {
   const normalizedSearch = search.trim()
   const hasSearch = normalizedSearch.length > 0
-  const hasItemsForFilter =
-    statusFilter === "ACTIVE"
-      ? activeCount > 0
-      : statusFilter === "INVITED"
-        ? invitedCount > 0
-        : disabledCount > 0
+  const hasItemsForFilter = statusFilter === "ACTIVE" ? activeCount > 0 : disabledCount > 0
 
   const emptyState = (() => {
     if (rows.length > 0) return null
@@ -71,14 +64,6 @@ export default function CoachRosterPane({
         title: "No results",
         body: `No results for “${normalizedSearch}”`,
         onInvite: undefined as (() => void) | undefined,
-      }
-    }
-
-    if (statusFilter === "INVITED") {
-      return {
-        title: "No pending invites",
-        body: "Invite a coach to get them access to the portal",
-        onInvite: onInviteClick,
       }
     }
 
@@ -127,18 +112,6 @@ export default function CoachRosterPane({
             onClick={() => onStatusChange("ACTIVE")}
           >
             Active ({activeCount})
-          </button>
-          <button
-            type="button"
-            disabled={filtersDisabled}
-            className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
-              statusFilter === "INVITED"
-                ? "border-indigo-200 bg-indigo-50 text-indigo-700"
-                : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
-            } ${filtersDisabled ? "cursor-not-allowed opacity-50" : ""}`}
-            onClick={() => onStatusChange("INVITED")}
-          >
-            Invited ({invitedCount})
           </button>
           <button
             type="button"
