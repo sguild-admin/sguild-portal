@@ -28,6 +28,9 @@ export const env = Object.freeze({
 
   // Clerk webhooks (Svix)
   CLERK_WEBHOOK_SECRET: optionalEnv("CLERK_WEBHOOK_SECRET"),
+
+  // Optional override for Clerk organization member role used for coach invites.
+  CLERK_COACH_ROLE: optionalEnv("CLERK_COACH_ROLE"),
 })
 
 export default env

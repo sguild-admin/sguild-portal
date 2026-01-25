@@ -47,6 +47,13 @@ type OrgInvite = {
 
 type ApiOk<T> = { ok: true } & T
 
+type ApiError = {
+  ok: false
+  code?: string
+  message?: string
+  details?: unknown
+}
+
 type MembersResponse = ApiOk<{ members: CoachMember[] }>
 
 type InviteListResponse = ApiOk<{ invites: OrgInvite[] }>
@@ -71,6 +78,19 @@ function formatPhone(value?: string | null) {
   if (digits.length < 4) return `(${digits}`
   if (digits.length < 7) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`
   return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`
+}
+
+function apiErrorMessage(payload: unknown, fallback: string): string {
+  if (!payload || typeof payload !== "object") return fallback
+  const err = payload as ApiError
+  const message = typeof err.message === "string" ? err.message.trim() : ""
+  const code = typeof err.code === "string" ? err.code.trim() : ""
+  const details = typeof err.details === "string" ? err.details.trim() : ""
+  if (code && message) return `${code}: ${message}`
+  if (message) return message
+  if (code) return code
+  if (details) return details
+  return fallback
 }
 
 function coachDisplayName(coach: CoachMember): string {
@@ -270,9 +290,9 @@ export default function CoachRosterManager({
           redirectUrl: `${window.location.origin}/sign-in`,
         }),
       })
-      const payload = (await res.json()) as { ok?: boolean; message?: string }
+      const payload = (await res.json()) as ApiOk<unknown> | ApiError
       if (!res.ok || !payload.ok) {
-        throw new Error(payload.message || "Failed to send invite")
+        throw new Error(apiErrorMessage(payload, "Failed to send invite"))
       }
       setInviteEmail("")
       setInviteName("")
@@ -303,7 +323,15 @@ export default function CoachRosterManager({
       const res = await fetch(`/api/org-invites/${invite.clerkInvitationId}/resend`, {
         method: "POST",
       })
-      if (!res.ok) throw new Error("Failed to resend invite")
+      let payload: ApiOk<unknown> | ApiError | null = null
+      try {
+        payload = (await res.json()) as ApiOk<unknown> | ApiError
+      } catch (err) {
+        payload = null
+      }
+      if (!res.ok || (payload && !payload.ok)) {
+        throw new Error(apiErrorMessage(payload, "Failed to resend invite"))
+      }
       await loadInvites()
       toast.success("Invite resent")
     } catch (err) {

@@ -3,7 +3,7 @@
 import "server-only"
 
 import { clerkClient } from "@clerk/nextjs/server"
-import { OrgInviteStatus, OrgRole } from "@prisma/client"
+import { OrgInviteStatus } from "@prisma/client"
 import { randomUUID } from "node:crypto"
 import { authzService, HttpError } from "@/modules/authz/authz.service"
 import { asInt, getQuery } from "@/modules/_shared/http"
@@ -14,11 +14,64 @@ import {
   PatchOrgInviteBodySchema,
 } from "@/modules/orgInvites/orgInvites.schema"
 import { toOrgInviteDTO } from "@/modules/orgInvites/orgInvites.dto"
+import env from "@/lib/env"
 
-// Map app OrgRole to Clerk org role string.
-function mapOrgRoleToClerkRole(role: OrgRole): string {
-  return role === OrgRole.ADMIN ? "org:admin" : "org:member"
+function getClerkErrorMessage(err: unknown): string {
+  if (err && typeof err === "object") {
+    const anyErr = err as any
+    const first = anyErr?.errors?.[0]
+    const code = typeof first?.code === "string" ? first.code.trim() : ""
+    const longMessage =
+      typeof first?.long_message === "string" ? first.long_message.trim() : ""
+    const message =
+      typeof first?.message === "string" ? first.message.trim() : ""
+    const meta = first?.meta ? JSON.stringify(first.meta) : ""
+    const baseMessage = longMessage || message || (typeof anyErr?.message === "string" ? anyErr.message : "")
+    if (code && baseMessage) return `${code}: ${baseMessage}${meta ? ` (${meta})` : ""}`
+    if (baseMessage) return `${baseMessage}${meta ? ` (${meta})` : ""}`
+    if (code) return code
+  }
+  return "Clerk invitation failed"
 }
+
+async function resolveInviteRole(
+  client: Awaited<ReturnType<typeof clerkClient>>,
+  clerkOrgId: string,
+  clerkUserId: string
+): Promise<string> {
+  if (env.CLERK_COACH_ROLE) return env.CLERK_COACH_ROLE
+
+  let adminRole: string | null = null
+  try {
+    const memberships = await client.users.getOrganizationMembershipList({
+      userId: clerkUserId,
+      limit: 100,
+    })
+    const match = memberships.data.find(m => m.organization?.id === clerkOrgId)
+    adminRole = typeof match?.role === "string" ? match.role : null
+  } catch {
+    adminRole = null
+  }
+
+  try {
+    const memberships = await client.organizations.getOrganizationMembershipList({
+      organizationId: clerkOrgId,
+      limit: 100,
+    })
+    const roles = memberships.data
+      .map(m => (typeof m?.role === "string" ? m.role : null))
+      .filter(Boolean) as string[]
+    const nonAdmin = roles.find(role => !adminRole || role !== adminRole)
+    if (nonAdmin) return nonAdmin
+    if (adminRole) return adminRole
+    if (roles.length) return roles[0]
+  } catch {
+    // ignore and fall back
+  }
+
+  return "org:member"
+}
+
 
 // List invites for the active org (admin only).
 export async function listOrgInvitesAction(request: Request) {
@@ -42,7 +95,6 @@ export async function createOrgInviteAction(body: unknown) {
 
   const email = data.email.trim().toLowerCase()
   // Invites are always for coaches; UI never exposes role changes.
-  const role = OrgRole.COACH
   const existing = await orgInvitesService.getByOrgAndEmail(org.id, email)
   if (existing?.status === OrgInviteStatus.ACCEPTED) {
     throw new HttpError(409, "ALREADY_MEMBER", "Member already accepted invite")
@@ -51,10 +103,16 @@ export async function createOrgInviteAction(body: unknown) {
   const dbInviteId = existing?.status === OrgInviteStatus.PENDING ? existing.id : randomUUID()
 
   const client = await clerkClient()
+  let clerkOrg
+  try {
+    clerkOrg = await client.organizations.getOrganization({ organizationId: clerkOrgId })
+  } catch (err) {
+    throw new HttpError(404, "CLERK_ORG_LOOKUP_FAILED", getClerkErrorMessage(err))
+  }
   const basePayload = {
-    organizationId: clerkOrgId,
+    organizationId: clerkOrg.id,
     emailAddress: email,
-    role: mapOrgRoleToClerkRole(role),
+    role: await resolveInviteRole(client, clerkOrgId, clerkUserId),
     expiresInDays: data.expiresInDays,
     redirectUrl: data.redirectUrl,
     publicMetadata: {
@@ -70,23 +128,10 @@ export async function createOrgInviteAction(body: unknown) {
     })
   } catch (err) {
     const message = err instanceof Error ? err.message.toLowerCase() : ""
-    if (message.includes("not found")) {
-      try {
-        invite = await client.organizations.createOrganizationInvitation(basePayload)
-      } catch (retryErr) {
-        const retryMessage =
-          retryErr instanceof Error ? retryErr.message.toLowerCase() : ""
-        if (retryMessage.includes("not found")) {
-          throw new HttpError(
-            404,
-            "CLERK_NOT_FOUND",
-            `Organization not found in Clerk (id: ${clerkOrgId}). Verify CLERK_SECRET_KEY for this environment.`
-          )
-        }
-        throw retryErr
-      }
-    } else {
-      throw err
+    try {
+      invite = await client.organizations.createOrganizationInvitation(basePayload)
+    } catch (retryErr) {
+      throw new HttpError(400, "CLERK_INVITE_FAILED", getClerkErrorMessage(retryErr))
     }
   }
 
@@ -173,10 +218,16 @@ export async function resendOrgInviteAction(clerkInvitationId: string) {
   }
 
   const client = await clerkClient()
+  let clerkOrg
+  try {
+    clerkOrg = await client.organizations.getOrganization({ organizationId: clerkOrgId })
+  } catch (err) {
+    throw new HttpError(404, "CLERK_ORG_LOOKUP_FAILED", getClerkErrorMessage(err))
+  }
   const basePayload = {
-    organizationId: clerkOrgId,
+    organizationId: clerkOrg.id,
     emailAddress: existing.email,
-    role: existing.role ?? mapOrgRoleToClerkRole(OrgRole.COACH),
+    role: await resolveInviteRole(client, clerkOrgId, clerkUserId),
     publicMetadata: {
       dbInviteId: existing.id,
     },
@@ -190,23 +241,10 @@ export async function resendOrgInviteAction(clerkInvitationId: string) {
     })
   } catch (err) {
     const message = err instanceof Error ? err.message.toLowerCase() : ""
-    if (message.includes("not found")) {
-      try {
-        invite = await client.organizations.createOrganizationInvitation(basePayload)
-      } catch (retryErr) {
-        const retryMessage =
-          retryErr instanceof Error ? retryErr.message.toLowerCase() : ""
-        if (retryMessage.includes("not found")) {
-          throw new HttpError(
-            404,
-            "CLERK_NOT_FOUND",
-            `Organization not found in Clerk (id: ${clerkOrgId}). Verify CLERK_SECRET_KEY for this environment.`
-          )
-        }
-        throw retryErr
-      }
-    } else {
-      throw err
+    try {
+      invite = await client.organizations.createOrganizationInvitation(basePayload)
+    } catch (retryErr) {
+      throw new HttpError(400, "CLERK_INVITE_FAILED", getClerkErrorMessage(retryErr))
     }
   }
 

@@ -125,7 +125,7 @@ export default function CoachRosterPane({
           </div>
         ) : rows.length === 0 ? (
           <div className="grid h-full place-items-center p-4">
-            <div className="w-full max-w-[300px]">
+            <div className="w-full max-w-75">
               <EmptyStateCard
                 title="No coaches yet"
                 body="Invite a coach by email. They’ll appear as Invited until they accept."
