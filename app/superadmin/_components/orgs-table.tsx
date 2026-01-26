@@ -1,40 +1,77 @@
-type OrgRow = {
+"use client"
+
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+
+export type OrgRow = {
   id: string
   name: string
   slug?: string | null
-  createdAt?: string | null
+  createdAt?: unknown
+  updatedAt?: unknown
+  _count?: { members: number }
 }
 
-export function OrgsTable({ items }: { items: OrgRow[] }) {
+function fmtDate(d: unknown) {
+  if (!d) return ""
+  const date = typeof d === "string" || d instanceof Date ? new Date(d) : null
+  if (!date) return ""
+  return Number.isNaN(date.getTime()) ? "" : date.toLocaleDateString()
+}
+
+export function OrgsTable({
+  orgs,
+  onInviteAdmin,
+}: {
+  orgs: OrgRow[]
+  onInviteAdmin: (org: OrgRow) => void
+}) {
   return (
-    <div className="overflow-hidden rounded-xl border bg-card">
-      <div className="border-b px-4 py-3 text-sm font-medium">Organizations</div>
-      <table className="w-full text-sm">
-        <thead className="bg-muted/50 text-left">
-          <tr>
-            <th className="px-4 py-2">Name</th>
-            <th className="px-4 py-2">Slug</th>
-            <th className="px-4 py-2">Created</th>
-          </tr>
-        </thead>
-        <tbody>
-          {items.length ? (
-            items.map((org) => (
-              <tr key={org.id} className="border-t">
-                <td className="px-4 py-2 font-medium">{org.name}</td>
-                <td className="px-4 py-2 text-muted-foreground">{org.slug ?? "—"}</td>
-                <td className="px-4 py-2 text-muted-foreground">{org.createdAt ?? "—"}</td>
-              </tr>
-            ))
+    <div className="rounded-xl border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Org</TableHead>
+            <TableHead>Slug</TableHead>
+            <TableHead>Members</TableHead>
+            <TableHead>Created</TableHead>
+            <TableHead className="text-right">Action</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {orgs.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={5} className="py-10 text-center text-sm text-muted-foreground">
+                No organizations yet
+              </TableCell>
+            </TableRow>
           ) : (
-            <tr>
-              <td className="px-4 py-6 text-muted-foreground" colSpan={3}>
-                No organizations found.
-              </td>
-            </tr>
+            orgs.map((org) => (
+              <TableRow key={org.id}>
+                <TableCell className="font-medium">{org.name}</TableCell>
+                <TableCell className="text-muted-foreground">{org.slug ?? "—"}</TableCell>
+                <TableCell className="text-muted-foreground">{org._count?.members ?? 0}</TableCell>
+                <TableCell className="text-muted-foreground">{fmtDate(org.createdAt)}</TableCell>
+                <TableCell className="text-right">
+                  <button
+                    className="text-sm underline underline-offset-4"
+                    onClick={() => onInviteAdmin(org)}
+                    type="button"
+                  >
+                    Invite admin
+                  </button>
+                </TableCell>
+              </TableRow>
+            ))
           )}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   )
 }

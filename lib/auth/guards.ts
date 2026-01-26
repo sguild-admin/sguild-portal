@@ -43,17 +43,16 @@ export async function requireAdminOrOwner(headers: Headers) {
 export const requireAdmin = requireAdminOrOwner
 
 export async function requireSuperAdmin(headers: Headers) {
-  const session = await requireSession(headers).catch(() => {
-    throw new AppError("UNAUTHENTICATED")
-  })
+  const result = await auth.api.getSession({ headers })
+  if (!result?.session || !result.user?.id) throw new AppError("UNAUTHENTICATED")
 
   const row = await prisma.superAdmin.findUnique({
-    where: { userId: session.userId },
+    where: { userId: result.user.id },
     select: { id: true },
   })
 
   if (!row) throw new AppError("FORBIDDEN")
 
-  return { session, superAdminId: row.id }
+  return { session: result.session, superAdminId: row.id }
 }
 
