@@ -1,1 +1,1 @@
-export { PATCH } from "@/modules/organizations/routes/active.route"
+export { PATCH } from "@/modules/organizations/routes/active.routes"

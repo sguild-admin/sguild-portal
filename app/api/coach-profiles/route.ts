@@ -1,1 +1,1 @@
-export { GET } from "@/modules/coach-profiles/routes/route"
+export { GET } from "@/modules/coach-profiles/routes/routes"

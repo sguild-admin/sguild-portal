@@ -1,9 +1,11 @@
 import { betterAuth } from "better-auth"
 import { prismaAdapter } from "better-auth/adapters/prisma"
-import { organization } from "better-auth/plugins"
+import { admin, organization } from "better-auth/plugins"
 import { nextCookies } from "better-auth/next-js"
-
 import { prisma } from "../db/prisma"
+import { createAuthClient } from "better-auth/react"
+import { adminClient } from "better-auth/client/plugins"
+import { organizationClient } from "better-auth/client/plugins"
 
 const BETTER_AUTH_SECRET = process.env.BETTER_AUTH_SECRET
 const BETTER_AUTH_URL = process.env.BETTER_AUTH_URL
@@ -29,5 +31,9 @@ export const auth = betterAuth({
         }
       : {},
 
-  plugins: [organization(), nextCookies()],
+  plugins: [organization(), nextCookies(), admin()],
+})
+
+export const authClient = createAuthClient({
+  plugins: [adminClient(), organizationClient()],
 })

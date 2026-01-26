@@ -1,1 +1,1 @@
-export { GET } from "@/modules/members/routes/me.route"
+export { GET } from "@/modules/members/routes/me.routes"

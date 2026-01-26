@@ -1,61 +1,84 @@
 // modules/invitations/invitations.service.ts
 import { auth } from "@/lib/auth/auth"
 import { requireActiveOrgId, requireAdminOrOwner, requireSession } from "@/lib/auth/guards"
+import type { CreateInviteInput, ListInvitesInput, RevokeInviteInput } from "./invitations.schema"
 
-type CreateInviteInput = {
-  email: string
-  role: "owner" | "admin" | "coach" | "member"
-  expiresInDays?: number
+const COACH_ORG_ROLE = "member" as const
+
+function unwrapData<T>(res: unknown): T {
+  const anyRes = res as any
+  return (anyRes?.data ?? anyRes) as T
 }
 
 export const invitationsService = {
-  async list(headers: Headers) {
+  async list(headers: Headers, input?: ListInvitesInput) {
     await requireAdminOrOwner(headers)
-    const orgId = await requireActiveOrgId(headers)
+    const organizationId = await requireActiveOrgId(headers)
 
-    return auth.api.listInvitations({
+    const res = await auth.api.listInvitations({
       headers,
       query: {
-        organizationId: orgId,
+        organizationId,
+        limit: input?.limit ?? 200,
+        offset: input?.offset ?? 0,
       } as any,
     })
+
+    return unwrapData(res)
   },
 
   async create(headers: Headers, input: CreateInviteInput) {
     await requireAdminOrOwner(headers)
-    const orgId = await requireActiveOrgId(headers)
+    const organizationId = await requireActiveOrgId(headers)
 
-    return auth.api.createInvitation({
+    const res = await auth.api.createInvitation({
       headers,
       body: {
-        organizationId: orgId,
+        organizationId,
         email: input.email,
-        role: input.role,
+        role: COACH_ORG_ROLE,
+        expiresInDays: input.expiresInDays,
+        resend: input.resend,
       } as any,
     })
+
+    return unwrapData(res)
   },
 
-  async cancel(headers: Headers, input: { invitationId: string }) {
+  async revoke(headers: Headers, input: RevokeInviteInput) {
     await requireAdminOrOwner(headers)
-    return auth.api.cancelInvitation({
+    const organizationId = await requireActiveOrgId(headers)
+
+    const res = await auth.api.cancelInvitation({
       headers,
-      body: { invitationId: input.invitationId },
+      body: {
+        organizationId,
+        invitationId: input.invitationId,
+      } as any,
     })
+
+    return unwrapData(res)
   },
 
-  async accept(headers: Headers, input: { invitationId: string }) {
+  async accept(headers: Headers, invitationId: string) {
     await requireSession(headers)
-    return auth.api.acceptInvitation({
+
+    const res = await auth.api.acceptInvitation({
       headers,
-      body: { invitationId: input.invitationId },
+      body: { invitationId },
     })
+
+    return unwrapData(res)
   },
 
-  async reject(headers: Headers, input: { invitationId: string }) {
+  async reject(headers: Headers, invitationId: string) {
     await requireSession(headers)
-    return auth.api.rejectInvitation({
+
+    const res = await auth.api.rejectInvitation({
       headers,
-      body: { invitationId: input.invitationId },
+      body: { invitationId },
     })
+
+    return unwrapData(res)
   },
 }

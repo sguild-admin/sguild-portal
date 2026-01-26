@@ -1,1 +1,1 @@
-export { PATCH } from "@/modules/coach-profiles/routes/status.route"
+export { PATCH } from "@/modules/coach-profiles/routes/status.routes"

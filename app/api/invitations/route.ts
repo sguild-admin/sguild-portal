@@ -1,1 +1,1 @@
-export { GET, POST, DELETE } from "@/modules/invitations/routes/route"
+export { GET, POST } from "@/modules/invitations/routes/routes"

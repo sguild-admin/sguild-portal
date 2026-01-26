@@ -1,1 +1,1 @@
-export { GET, PATCH } from "@/modules/org-settings/routes/route"
+export { GET, PATCH } from "@/modules/org-settings/routes/routes"

@@ -1,4 +1,5 @@
 // lib/auth/guards.ts
+import { prisma } from "@/lib/db/prisma"
 import { auth } from "./auth"
 import { UnauthorizedError, ForbiddenError, ConflictError } from "@/lib/http/errors"
 
@@ -40,3 +41,15 @@ export async function requireAdminOrOwner(headers: Headers) {
  * Remove later once everything is migrated
  */
 export const requireAdmin = requireAdminOrOwner
+
+export async function requireSuperAdmin(headers: Headers) {
+  const session = await requireSession(headers)
+
+  const row = await prisma.superAdmin.findUnique({
+    where: { userId: session.userId },
+  })
+
+  if (!row) throw new ForbiddenError("Super admin required")
+
+  return { session }
+}

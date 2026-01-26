@@ -16,8 +16,9 @@ model OrgSettings {
   acuityEnabled Boolean  @default(false)
   acuityUserId  String?
   acuityApiKey  String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("org_settings")
 }
@@ -29,7 +30,7 @@ model CoachProfile {
   org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
 
   userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   status CoachStatus @default(ACTIVE)
 
@@ -60,6 +61,15 @@ model RateLimit {
   @@map("rate_limit")
 }
 
+model SuperAdmin {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("super_admin")
+}
+
 //
 // Better Auth tables (generated and owned by Better Auth)
 //
@@ -80,6 +90,11 @@ model User {
 
   coachProfiles CoachProfile[]
 
+  role       String?
+  banned     Boolean?  @default(false)
+  banReason  String?
+  banExpires DateTime?
+
   @@unique([email])
   @@map("user")
 }
@@ -95,6 +110,8 @@ model Session {
   userId               String
   user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   activeOrganizationId String?
+
+  impersonatedBy String?
 
   @@unique([token])
   @@index([userId])

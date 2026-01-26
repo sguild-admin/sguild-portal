@@ -34,7 +34,7 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts"
-  ],
+, "modules/super-admin/routes/users.route.sts"  ],
   "exclude": [
     "node_modules",
     ".next"
