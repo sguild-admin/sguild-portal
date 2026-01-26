@@ -1,5 +1,6 @@
 export * from "./cn"
 export * from "./ids"
 export * from "./strings"
+export * from "./slug"
 export * from "./time"
 export * from "./zod"

@@ -1,5 +1,7 @@
 import { auth } from "@/lib/auth/auth"
 import { requireSession, requireSuperAdmin } from "@/lib/auth/guards"
+import { AppError } from "@/lib/http/errors"
+import { slugifyOrgName } from "@/lib/utils/slug"
 import { superAdminRepo } from "./super-admin.repo"
 import {
   toSuperAdminOrgDto,
@@ -73,34 +75,23 @@ export const superAdminService = {
     await requireSuperAdmin(headers)
     const session = await requireSession(headers)
 
-    // Server-side create-on-behalf: do NOT pass session headers when using userId :contentReference[oaicite:1]{index=1}
-    const created = await auth.api.createOrganization({
-      body: {
-        name: input.name,
-        slug: input.slug,
-        logo: input.logo,
-        userId: input.ownerUserId,
-        keepCurrentActiveOrganization: false,
-      } as any,
-    })
+    const baseSlug = slugifyOrgName(input.name)
+    if (!baseSlug) throw new AppError("BAD_REQUEST", "Organization name produced an empty slug")
 
-    const org = (created as any)?.data ?? created
-    const organizationId = String(org?.id ?? org?.organization?.id ?? "")
+    let slug = baseSlug
+    let i = 2
 
-    if (input.addSuperAdminAsAdmin && organizationId) {
-      // Server-only addMember does not require session headers :contentReference[oaicite:2]{index=2}
-      try {
-        await auth.api.addMember({
-          body: {
-            organizationId,
-            userId: session.userId,
-            role: ["admin"],
-          } as any,
-        })
-      } catch {
-        // ignore if already a member
-      }
+    while (await superAdminRepo.slugExists(slug)) {
+      slug = `${baseSlug}-${i}`
+      i += 1
     }
+
+    const org = await superAdminRepo.createOrgWithOwner({
+      orgId: crypto.randomUUID(),
+      name: input.name,
+      slug,
+      ownerUserId: session.userId,
+    })
 
     return toSuperAdminOrgDto(org)
   },

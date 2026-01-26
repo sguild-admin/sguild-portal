@@ -23,11 +23,7 @@ export const superAdminSchemas = {
   }),
 
   createOrg: z.object({
-    name: z.string().min(1),
-    slug: z.string().min(1),
-    logo: z.string().url().optional(),
-    ownerUserId: z.string().min(1), // create org on behalf of this user (server-only)
-    addSuperAdminAsAdmin: z.boolean().default(true),
+    name: z.string().trim().min(2).max(80),
   }),
 
   listOrgs: z.object({

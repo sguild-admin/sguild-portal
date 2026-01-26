@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { slugifyOrgName } from "@/lib/utils/slug"
 
 type ApiOk<T> = { ok: true; data: T }
 type ApiFail = { ok: false; error: unknown }
@@ -24,21 +25,7 @@ export type OrgCreated = {
   createdAt?: string | Date | null
 }
 
-function slugify(s: string) {
-  return s
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, "")
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-")
-}
-
-async function apiCreateOrg(input: {
-  name: string
-  slug: string
-  ownerUserId: string
-  addSuperAdminAsAdmin: boolean
-}): Promise<OrgCreated> {
+async function apiCreateOrg(input: { name: string }): Promise<OrgCreated> {
   const res = await fetch("/api/super-admin/orgs", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -60,38 +47,20 @@ export function CreateOrgDialog({
   onCreated: (org: OrgCreated) => void
 }) {
   const [name, setName] = useState("")
-  const [slug, setSlug] = useState("")
-  const [ownerUserId, setOwnerUserId] = useState("")
   const [submitting, setSubmitting] = useState(false)
 
-  const slugPreview = useMemo(() => (slug ? slugify(slug) : slugify(name)), [name, slug])
+  const slugPreview = useMemo(() => slugifyOrgName(name), [name])
 
   async function onSubmit() {
-    const nextSlug = slugPreview
     if (!name.trim()) {
       toast.error("Name is required")
-      return
-    }
-    if (!nextSlug || nextSlug.length < 2) {
-      toast.error("Slug is required")
-      return
-    }
-    if (!ownerUserId.trim()) {
-      toast.error("Owner user ID is required")
       return
     }
 
     setSubmitting(true)
     try {
-      const created = await apiCreateOrg({
-        name: name.trim(),
-        slug: nextSlug,
-        ownerUserId: ownerUserId.trim(),
-        addSuperAdminAsAdmin: true,
-      })
+      const created = await apiCreateOrg({ name: name.trim() })
       setName("")
-      setSlug("")
-      setOwnerUserId("")
       onCreated(created)
     } catch {
       toast.error("Failed to create org")
@@ -119,27 +88,8 @@ export function CreateOrgDialog({
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="org-slug">Slug</Label>
-            <Input
-              id="org-slug"
-              value={slug}
-              onChange={(e) => setSlug(e.target.value)}
-              placeholder="sguild-swim-dallas"
-              autoComplete="off"
-            />
-            <p className="text-xs text-muted-foreground/80">Will use: {slugPreview}</p>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="org-owner">Owner user ID</Label>
-            <Input
-              id="org-owner"
-              value={ownerUserId}
-              onChange={(e) => setOwnerUserId(e.target.value)}
-              placeholder="user_123"
-              autoComplete="off"
-            />
+          <div className="text-sm text-muted-foreground">
+            Slug: {slugPreview || " "}
           </div>
         </div>
 
