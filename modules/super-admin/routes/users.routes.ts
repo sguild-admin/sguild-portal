@@ -1,4 +1,4 @@
-import { ok, fail } from "@/lib/http/response"
+import { ok, fail, toHttpStatus } from "@/lib/http/response"
 import { superAdminService } from "../super-admin.service"
 import { superAdminSchemas } from "../super-admin.schema"
 
@@ -22,7 +22,7 @@ export async function GET(req: Request) {
     const data = await superAdminService.listUsers(req.headers, input)
     return ok(data)
   } catch (e) {
-    return fail(e)
+    return fail(e, toHttpStatus(e))
   }
 }
 
@@ -34,6 +34,6 @@ export async function POST(req: Request) {
     const data = await superAdminService.createUser(req.headers, input)
     return ok(data, 201)
   } catch (e) {
-    return fail(e)
+    return fail(e, toHttpStatus(e))
   }
 }

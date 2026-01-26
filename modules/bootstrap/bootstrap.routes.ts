@@ -1,11 +1,21 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth/auth"
+import { prisma } from "@/lib/db/prisma"
 import { orgSettingsRepo } from "@/modules/org-settings/org-settings.repo"
 
 function normalizeRoles(role: unknown): string[] {
   if (Array.isArray(role)) return role.map(String)
   if (typeof role === "string") return role.split(",").map((r) => r.trim()).filter(Boolean)
   return []
+}
+
+async function isSuperAdmin(userId: string) {
+  const row = await prisma.superAdmin.findUnique({
+    where: { userId },
+    select: { id: true },
+  })
+
+  return !!row
 }
 
 export async function GET(req: Request) {
@@ -21,12 +31,14 @@ export async function GET(req: Request) {
           session: null,
           activeOrg: null,
           roles: [],
+          superAdmin: false,
           orgSettings: null,
         },
       })
     }
 
     const activeOrgId = session.session?.activeOrganizationId ?? null
+    const superAdmin = await isSuperAdmin(session.user.id)
 
     const roleRes = await auth.api.getActiveMemberRole({ headers: req.headers })
     const roleRaw = (roleRes as any)?.role ?? (roleRes as any)?.data?.role
@@ -58,6 +70,7 @@ export async function GET(req: Request) {
         },
         activeOrg,
         roles,
+        superAdmin,
         orgSettings,
       },
     })
@@ -70,6 +83,7 @@ export async function GET(req: Request) {
         session: null,
         activeOrg: null,
         roles: [],
+        superAdmin: false,
         orgSettings: null,
       },
     })

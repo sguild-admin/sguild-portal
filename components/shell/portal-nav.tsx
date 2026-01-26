@@ -7,12 +7,12 @@ import { useBootstrap } from "./bootstrap-provider"
 type NavItem = {
   href: string
   label: string
-  allow: (roles: string[], isSuperAdmin: boolean) => boolean
+  allow: (roles: string[], superAdmin: boolean) => boolean
 }
 
 const NAV: NavItem[] = [
   { href: "/portal", label: "Home", allow: () => true },
-  { href: "/portal/super-admin", label: "Super Admin", allow: (_r, sa) => sa },
+  { href: "/superadmin", label: "Super Admin", allow: (_r, sa) => sa },
   { href: "/portal/admin", label: "Admin", allow: (r) => r.includes("owner") || r.includes("admin") },
   { href: "/portal/coach", label: "Coach", allow: (r) => r.includes("member") || r.includes("owner") || r.includes("admin") },
 ]
@@ -27,9 +27,9 @@ export function PortalNav() {
   const { data, loading } = useBootstrap()
 
   const roles = !loading ? (data?.roles ?? []) : []
-  const isSuperAdmin = !!data?.isSuperAdmin
+  const superAdmin = !!data?.superAdmin
 
-  const items = NAV.filter((x) => x.allow(roles, isSuperAdmin))
+  const items = NAV.filter((x) => x.allow(roles, superAdmin))
 
   return (
     <nav className="rounded-xl border bg-card p-2">

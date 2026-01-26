@@ -1,4 +1,4 @@
-import { ok, fail } from "@/lib/http/response"
+import { ok, fail, toHttpStatus } from "@/lib/http/response"
 import { z } from "zod"
 import { superAdminService } from "../super-admin.service"
 
@@ -23,6 +23,6 @@ export async function POST(req: Request, ctx: { params: Promise<{ orgId: string 
 
     return ok(data, 201)
   } catch (e) {
-    return fail(e)
+    return fail(e, toHttpStatus(e))
   }
 }

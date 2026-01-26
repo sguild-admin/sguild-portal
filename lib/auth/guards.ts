@@ -1,12 +1,12 @@
 // lib/auth/guards.ts
 import { prisma } from "@/lib/db/prisma"
 import { auth } from "./auth"
-import { UnauthorizedError, ForbiddenError, ConflictError } from "@/lib/http/errors"
+import { AppError } from "@/lib/http/errors"
 
 type SessionResult = Awaited<ReturnType<typeof auth.api.getSession>>
 
 function getSessionOrThrow(result: SessionResult) {
-  if (!result?.session) throw new UnauthorizedError("Not authenticated")
+  if (!result?.session) throw new AppError("UNAUTHENTICATED", "Not authenticated")
   return result.session
 }
 
@@ -17,7 +17,7 @@ export async function requireSession(headers: Headers) {
 
 export async function requireActiveOrgId(headers: Headers) {
   const session = await requireSession(headers)
-  if (!session.activeOrganizationId) throw new ConflictError("No active organization")
+  if (!session.activeOrganizationId) throw new AppError("FORBIDDEN", "No active organization")
   return session.activeOrganizationId
 }
 
@@ -32,7 +32,7 @@ export async function getActiveRoles(headers: Headers) {
 export async function requireAdminOrOwner(headers: Headers) {
   const roles = await getActiveRoles(headers)
   if (!roles.includes("admin") && !roles.includes("owner")) {
-    throw new ForbiddenError("Admin or owner required")
+    throw new AppError("FORBIDDEN", "Admin or owner required")
   }
 }
 
@@ -43,13 +43,17 @@ export async function requireAdminOrOwner(headers: Headers) {
 export const requireAdmin = requireAdminOrOwner
 
 export async function requireSuperAdmin(headers: Headers) {
-  const session = await requireSession(headers)
+  const session = await requireSession(headers).catch(() => {
+    throw new AppError("UNAUTHENTICATED")
+  })
 
   const row = await prisma.superAdmin.findUnique({
     where: { userId: session.userId },
+    select: { id: true },
   })
 
-  if (!row) throw new ForbiddenError("Super admin required")
+  if (!row) throw new AppError("FORBIDDEN")
 
-  return { session }
+  return { session, superAdminId: row.id }
 }
+

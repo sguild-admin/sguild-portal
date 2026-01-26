@@ -9,6 +9,7 @@ export type BootstrapPayload = {
   } | null
   activeOrg: any | null
   roles: string[]
+  superAdmin: boolean
   orgSettings: any | null
 }
 

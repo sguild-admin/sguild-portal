@@ -1,7 +1,7 @@
 // lib/security/rate-limit.ts
 import { headers } from "next/headers"
 import { prisma } from "@/lib/db/prisma"
-import { RateLimitedError } from "@/lib/http/errors"
+import { AppError } from "@/lib/http/errors"
 
 /**
  * Minimal DB-backed rate limiter
@@ -45,7 +45,7 @@ export async function rateLimit(params: {
   }
 
   if (row.count >= params.limit) {
-    throw new RateLimitedError("Too many requests")
+    throw new AppError("BAD_REQUEST", "Too many requests")
   }
 
   await prisma.rateLimit.update({

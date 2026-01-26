@@ -9,7 +9,7 @@ export type BootstrapData = {
   activeOrg: any | null
   roles: string[]
   orgSettings: any | null
-  isSuperAdmin?: boolean
+  superAdmin: boolean
 }
 
 type BootstrapState = {

@@ -32,6 +32,7 @@ export const auth = betterAuth({
       : {},
 
   plugins: [organization(), nextCookies(), admin()],
+  
 })
 
 export const authClient = createAuthClient({

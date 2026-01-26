@@ -1,41 +1,26 @@
-Sguild app AI instructions
+# Sguild App Copilot Instructions
 
-## Big picture
-- Next.js App Router with Clerk auth and Prisma Postgres. UI and API entrypoints live in app/ only.
-- All server side business logic lives in modules/ by domain, including server actions and webhooks.
-- Multi tenant by organization. All org owned data access must be scoped by internal orgId.
+## Architecture overview
+- Next.js App Router app with domain logic in modules/<module>/... and thin routing in app/api/**/route.ts.
+- API flow: app/api/**/route.ts re-exports handlers from modules/**/routes (example: app/api/bootstrap/route.ts → modules/bootstrap/bootstrap.routes.ts).
+- Module boundaries: schemas in modules/<module>/<module>.schema.ts (Zod), DB access in modules/<module>/<module>.repo.ts, business logic in modules/<module>/<module>.service.ts, output shaping in modules/<module>/<module>.dto.ts, and explicit exports in modules/<module>/index.ts (no export *).
+- Prisma client singleton in lib/db/prisma.ts; schema in prisma/schema.prisma; migrations in prisma/migrations.
 
-## Folder responsibilities
-- app/ renders UI and re exports module route handlers from app/api/**/route.ts.
-- modules/ owns all backend logic and contracts per domain.
-- lib/ contains infra helpers like Prisma and Clerk utilities.
+## API conventions
+- Standard responses use lib/http/response.ts helpers `ok()` and `fail()`; match shape { ok: true, data } or { ok: false, error }.
+- Auth guards only from lib/auth/guards.ts: `requireSession`, `requireActiveOrgId`, `getActiveRoles`, `requireAdminOrOwner`, `requireSuperAdmin`.
+- Prefer org context from session.activeOrganizationId; membership identity uses memberId (not userId).
+- REST paths: /api/<module> (list/create), /api/<module>/me (current user), /api/<module>/active (active selection); avoid action-switch routes.
 
-## Module file layout and roles
-- Use only these filenames per module: <module>.routes.ts, <module>.actions.ts, <module>.service.ts, <module>.repo.ts, <module>.schema.ts, <module>.dto.ts, index.ts.
-- routes.ts parses Request and returns Response.json. No Prisma or business logic.
-- actions.ts owns orchestration, authz, Zod validation, DTO mapping, and server actions. Return DTOs only.
-- service.ts holds domain rules and transitions. No Request, Response, or auth reads.
-- repo.ts is Prisma only. No authz or validation. Accept Prisma.TransactionClient for transactions.
+## Auth + bootstrap
+- Better Auth server in lib/auth/auth.ts and React client in lib/auth/auth-client.ts.
+- Auth handler lives at app/api/auth/[...all]/route.ts; session check at GET /api/auth/session.
+- Bootstrap endpoint GET /api/bootstrap returns a single payload: signedIn, user, session, activeOrg, roles, superAdmin, orgSettings (see modules/bootstrap/bootstrap.routes.ts). UI should call /api/bootstrap once on load.
 
-## Auth and tenancy
-- Centralize permission checks in modules/authz/authz.service.ts. Actions call authzService helpers.
-- Clerk helpers live in lib/clerk.ts, including requireClerkUserId and requireClerkOrgId.
+## UI structure
+- UI primitives in components/ui; shared portal layout in components/shell (PortalShell, PortalHeader, PortalNav); reusable app components in components/common.
+- Feature UI for a portal area lives in app/portal/<area>/_components; pages should stay thin and compose feature components.
 
-## Webhooks
-- app/api/webhooks/clerk/route.ts re exports handlers from modules/webhooks.
-- webhooks.routes.ts verifies signatures then delegates to webhooks.actions.ts.
-- Wrap side effects with idempotencyService.runOnce keyed by provider and eventId.
-
-## API and exports
-- app/api/**/route.ts files only re export module handlers. No logic in app/api.
-- module index.ts exports routes and actions. Export dto or schema only if needed by UI.
-
-## Schema change workflow
-1) Update prisma/schema.prisma
-2) Create migration
-3) Update repo methods
-4) Update services
-5) Update schemas and DTOs
-6) Update actions
-7) Update routes
-8) Update webhooks and authz if behavior or permissions change
+## Workflows
+- Dev server: npm run dev. Build: npm run build (runs prisma generate). Lint: npm run lint.
+- Prisma client generation runs on postinstall; use prisma/schema.prisma as source of truth.
