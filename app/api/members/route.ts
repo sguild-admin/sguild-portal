@@ -1,2 +1,1 @@
-// app/api/members/route.ts
-export { GET_members as GET } from "@/modules/members"
+export { GET, PATCH, DELETE } from "@/modules/members/routes/route"

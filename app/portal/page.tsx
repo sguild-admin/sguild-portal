@@ -1,40 +1,20 @@
 // app/portal/page.tsx
-// Redirect users to the right portal based on membership role.
+import { headers } from "next/headers"
 import { redirect } from "next/navigation"
-import { unknownToAppError } from "@/modules/_shared/errors"
-import { getMeAction } from "@/modules/members"
+import { auth } from "@/lib/auth/auth"
 
-// Always evaluate on the server for auth checks.
-export const dynamic = "force-dynamic"
-export const revalidate = 0
-export const fetchCache = "force-no-store"
+export default async function PortalHomePage() {
+  const h = await headers()
+  const result = await auth.api.getSession({ headers: h })
 
-async function getMembersMeSafe() {
-  try {
-    const dto = await getMeAction()
-    return { ok: true as const, ...dto }
-  } catch (err) {
-    const e = unknownToAppError(err)
-    return { ok: false as const, code: e.code, message: e.message }
-  }
-}
-
-export default async function Page() {
-  const me = await getMembersMeSafe()
-
-  if (!me.ok) {
-    if (me.code === "NO_ACTIVE_ORG") redirect("/portal/select-org")
-    if (me.code === "UNAUTHENTICATED") redirect("/sign-in")
-    return null
+  if (!result?.session) {
+    redirect("/sign-in")
   }
 
-  if (me.membership?.role === "ADMIN") {
-    redirect("/portal/admin")
-  }
-
-  if (me.membership?.role === "COACH") {
-    redirect("/portal/coach")
-  }
-
-  redirect("/portal")
+  return (
+    <div className="space-y-2">
+      <h1 className="text-xl font-semibold tracking-tight">Portal</h1>
+      <p className="text-sm text-muted-foreground">Select a section from the navigation</p>
+    </div>
+  )
 }

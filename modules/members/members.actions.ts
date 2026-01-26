@@ -1,72 +1,80 @@
 // modules/members/members.actions.ts
-// Server actions for listing and managing org memberships.
-import "server-only"
+"use server"
 
-import { MembershipStatus, OrgRole } from "@prisma/client"
-import { authzService, HttpError } from "@/modules/authz/authz.service"
-import { asEnum, asInt, getQuery } from "@/modules/_shared/http"
-import { membersService } from "@/modules/members/members.service"
-import { ListMembersQuerySchema, PatchMemberBodySchema } from "./members.schema"
-import { toMemberWithUserDTO } from "./members.dto"
+import { headers } from "next/headers"
+import { auth } from "@/lib/auth/auth"
+import { requireActiveOrgId, requireAdminOrOwner, requireSession } from "@/lib/auth/guards"
+import { ListMembersQuerySchema, UpdateMemberRoleSchema, RemoveMemberSchema } from "./members.schema"
 
-// List members for the active org (admin only).
-export async function listMembersAction(request: Request) {
-  const { org } = await authzService.requireAdmin()
+export async function listMembersAction(input?: unknown) {
+  const hdrs = await headers()
+  await requireSession(hdrs)
+  await requireAdminOrOwner(hdrs)
 
-  const query = getQuery(request)
-  const role = asEnum(OrgRole, query.get("role"))
-  const status = asEnum(MembershipStatus, query.get("status"))
-  const take = Math.min(asInt(query.get("take"), 100), 200)
-  const skip = Math.max(asInt(query.get("skip"), 0), 0)
+  const q = input ? ListMembersQuerySchema.parse(input) : {}
+  const orgId = await requireActiveOrgId(hdrs)
 
-  const input = ListMembersQuerySchema.parse({ role, status, take, skip })
-  const members = await membersService.listByOrgWithUser(org.id, input)
+  // Organization plugin supports listing members; some builds support filters, others don't
+  // We pass orgId always and apply role/status filtering client-side if needed
+  const result = await auth.api.listMembers({
+    headers: hdrs,
+    query: {
+      organizationId: orgId,
+      limit: q.limit ?? 200,
+      offset: q.offset ?? 0,
+    } as any,
+  })
 
-  return { members: members.map(toMemberWithUserDTO) }
+  // If the API returns members with role/status, filter here using q.role/q.status
+  const members = (result as any)?.data ?? result
+  if (!Array.isArray(members)) return result
+
+  const filtered = members.filter((m) => {
+    const roleOk = q.role ? String(m.role) === q.role : true
+    const statusOk = q.status ? String(m.status ?? "active") === q.status : true
+    return roleOk && statusOk
+  })
+
+  return filtered
 }
 
-// Return membership and org info for current user.
-export async function getMeAction() {
-  await authzService.requireUserId()
-  const access = await authzService.requireOrgAccess()
-  return {
-    org: { id: access.org.id, clerkOrgId: access.org.clerkOrgId, name: access.org.name },
-    membership: access.membership,
-  }
+export async function getActiveMemberAction() {
+  const hdrs = await headers()
+  await requireSession(hdrs)
+  return auth.api.getActiveMember({ headers: hdrs })
 }
 
-// Fetch a member by Clerk user id (admin only).
-export async function getMemberByClerkUserIdAction(clerkUserId: string) {
-  const { org } = await authzService.requireAdmin()
+export async function updateMemberRoleAction(input: unknown) {
+  const hdrs = await headers()
+  await requireSession(hdrs)
+  await requireAdminOrOwner(hdrs)
 
-  const member = await membersService.getByOrgAndClerkUserIdWithUser(org.id, clerkUserId)
-  if (!member) throw new HttpError(404, "NOT_FOUND", "Member not found")
+  const orgId = await requireActiveOrgId(hdrs)
+  const data = UpdateMemberRoleSchema.parse(input)
 
-  return { member: toMemberWithUserDTO(member) }
+  return auth.api.updateMemberRole({
+    headers: hdrs,
+    body: {
+      organizationId: orgId,
+      memberId: data.memberId,
+      role: [data.role],
+    } as any,
+  })
 }
 
-// Patch a member's role/status (admin only).
-export async function patchMemberByClerkUserIdAction(clerkUserId: string, body: unknown) {
-  const { org } = await authzService.requireAdmin()
+export async function removeMemberAction(input: unknown) {
+  const hdrs = await headers()
+  await requireSession(hdrs)
+  await requireAdminOrOwner(hdrs)
 
-  const data = PatchMemberBodySchema.parse(body)
+  const orgId = await requireActiveOrgId(hdrs)
+  const data = RemoveMemberSchema.parse(input)
 
-  let updated = await membersService.getByOrgAndClerkUserId(org.id, clerkUserId)
-  if (!updated) throw new HttpError(404, "NOT_FOUND", "Member not found")
-
-  if (data.role) updated = await membersService.setRole(org.id, clerkUserId, data.role)
-
-  if (data.status) {
-    const now = new Date()
-    const timestamps =
-      data.status === MembershipStatus.ACTIVE
-        ? { activatedAt: now, disabledAt: null }
-        : { disabledAt: now }
-
-    updated = await membersService.setStatus(org.id, clerkUserId, data.status, timestamps)
-  }
-
-  const refreshed = await membersService.getByOrgAndClerkUserIdWithUser(org.id, clerkUserId)
-  if (!refreshed) throw new HttpError(404, "NOT_FOUND", "Member not found")
-  return { member: toMemberWithUserDTO(refreshed) }
+  return auth.api.removeMember({
+    headers: hdrs,
+    body: {
+      organizationId: orgId,
+      memberIdOrEmail: data.memberIdOrEmail,
+    } as any,
+  })
 }

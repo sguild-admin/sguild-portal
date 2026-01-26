@@ -6,135 +6,178 @@ datasource db {
   provider = "postgresql"
 }
 
-model Organization {
-  id                      String          @id @default(uuid()) @db.Uuid
-  clerkOrgId              String          @unique @db.Text
-  name                    String          @db.Text
-  primaryAdminClerkUserId String?
-  createdAt               DateTime        @default(now())
-  updatedAt               DateTime        @updatedAt
-  members                 OrgMembership[]
-  invitations             OrgInvitation[]
-  settings                OrgSettings?
-
-  @@index([primaryAdminClerkUserId])
-}
-
 model OrgSettings {
-  id            String       @id @default(uuid()) @db.Uuid
-  orgId         String       @unique @db.Uuid
-  org           Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  id    String       @id @default(uuid())
+  orgId String       @unique
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
 
-  timeZone      String       @default("America/Chicago") @db.Text
-  currency      String       @default("USD") @db.Text
+  timeZone      String   @default("America/Chicago")
+  currency      String   @default("USD")
+  acuityEnabled Boolean  @default(false)
+  acuityUserId  String?
+  acuityApiKey  String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  acuityEnabled Boolean      @default(false)
-  acuityUserId  String?      @db.Text
-  acuityApiKey  String?      @db.Text
-
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
-}
-
-model AppUser {
-  id           String   @id @default(uuid()) @db.Uuid
-  clerkUserId  String   @unique @db.Text
-
-  primaryEmail String?  @db.Text
-  firstName    String?  @db.Text
-  lastName     String?  @db.Text
-  displayName  String?  @db.Text
-
-  isDisabled   Boolean  @default(false)
-
-  lastSignInAt DateTime?
-  lastSeenAt   DateTime?
-
-  coachProfile CoachProfile?
-  memberships  OrgMembership[]
-
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-}
-
-model OrgMembership {
-  id          String           @id @default(uuid()) @db.Uuid
-  orgId       String           @db.Uuid
-  clerkUserId String
-  role        OrgRole
-  status      MembershipStatus @default(ACTIVE)
-  invitedAt   DateTime?
-  activatedAt DateTime?
-  disabledAt  DateTime?
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
-  org         Organization     @relation(fields: [orgId], references: [id], onDelete: Cascade)
-  appUser     AppUser          @relation(fields: [clerkUserId], references: [clerkUserId], onDelete: Cascade)
-
-  @@unique([orgId, clerkUserId])
-  @@index([clerkUserId])
-  @@index([orgId, role, status])
+  @@map("org_settings")
 }
 
 model CoachProfile {
-  id        String   @id @default(uuid()) @db.Uuid
-  appUserId String   @unique @db.Uuid
-  appUser   AppUser  @relation(fields: [appUserId], references: [id], onDelete: Cascade)
+  id String @id @default(uuid())
 
-  bio       String?  @db.Text
-  notes     String?  @db.Text
-  zip       String?  @db.Text
-  phone     String?  @db.Text
+  orgId String
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  status CoachStatus @default(ACTIVE)
+
+  bio   String?
+  notes String?
+  zip   String?
+  phone String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@unique([orgId, userId])
+  @@index([orgId])
+  @@index([userId])
+  @@map("coach_profile")
 }
 
-model WebhookEvent {
-  id          String    @id @default(uuid()) @db.Uuid
-  provider    String
-  eventId     String
-  receivedAt  DateTime  @default(now())
-  processedAt DateTime?
-
-  @@unique([provider, eventId])
-  @@index([provider, receivedAt])
-}
-
-model OrgInvitation {
-  id                String          @id @default(uuid()) @db.Uuid
-  orgId             String          @db.Uuid
-  org               Organization    @relation(fields: [orgId], references: [id], onDelete: Cascade)
-
-  clerkInvitationId String          @unique @db.Text
-  email             String          @db.Text
-  role              String?         @db.Text
-  status            OrgInviteStatus @default(PENDING)
-
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
-  lastSentAt        DateTime?
-  expiresAt         DateTime?
-  acceptedAt        DateTime?
-  revokedAt         DateTime?
-
-  @@index([orgId, email])
-  @@index([orgId, status])
-}
-
-enum OrgRole {
-  ADMIN
-  COACH
-}
-
-enum MembershipStatus {
+enum CoachStatus {
   ACTIVE
   DISABLED
 }
 
-enum OrgInviteStatus {
-  PENDING
-  ACCEPTED
-  REVOKED
-  EXPIRED
+model RateLimit {
+  key        String   @id
+  count      Int      @default(0)
+  windowEnds DateTime
+
+  @@map("rate_limit")
+}
+
+//
+// Better Auth tables (generated and owned by Better Auth)
+//
+
+model User {
+  id            String   @id
+  name          String
+  email         String
+  emailVerified Boolean  @default(false)
+  image         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  sessions    Session[]
+  accounts    Account[]
+  members     Member[]
+  invitations Invitation[]
+
+  coachProfiles CoachProfile[]
+
+  @@unique([email])
+  @@map("user")
+}
+
+model Session {
+  id                   String   @id
+  expiresAt            DateTime
+  token                String
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  ipAddress            String?
+  userAgent            String?
+  userId               String
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  activeOrganizationId String?
+
+  @@unique([token])
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+model Organization {
+  id        String   @id
+  name      String
+  slug      String   @unique
+  logo      String?
+  metadata  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members     Member[]
+  invitations Invitation[]
+  settings    OrgSettings?
+
+  coachProfiles CoachProfile[]
+
+  @@map("organization")
+}
+
+model Member {
+  id             String       @id
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role           String       @default("member")
+  createdAt      DateTime
+
+  @@index([organizationId])
+  @@index([userId])
+  @@map("member")
+}
+
+model Invitation {
+  id             String       @id
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  email          String
+  role           String?
+  status         String       @default("pending")
+  expiresAt      DateTime
+  createdAt      DateTime     @default(now())
+  inviterId      String
+  user           User         @relation(fields: [inviterId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([email])
+  @@map("invitation")
 }

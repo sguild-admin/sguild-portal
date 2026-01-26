@@ -1,2 +1,1 @@
-// app/api/members/me/route.ts
-export { GET_me as GET } from "@/modules/members"
+export { GET } from "@/modules/members/routes/me.route"
