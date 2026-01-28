@@ -19,6 +19,9 @@ const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET
 export const auth = betterAuth({
   secret: BETTER_AUTH_SECRET,
   baseURL: BETTER_AUTH_URL,
+  advanced: {
+    useSecureCookies: process.env.NODE_ENV === "production",
+  },
 
   database: prismaAdapter(prisma, { provider: "postgresql" }),
 

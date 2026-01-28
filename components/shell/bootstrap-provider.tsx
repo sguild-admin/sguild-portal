@@ -5,7 +5,11 @@ import React, { createContext, useContext, useEffect, useMemo, useState } from "
 export type BootstrapData = {
   signedIn: boolean
   user: { id: string; email?: string | null; name?: string | null } | null
-  session: { id?: string | null; activeOrganizationId: string | null; expiresAt?: string | null } | null
+  session: {
+    id?: string | null
+    activeOrganizationId: string | null
+    expiresAt?: string | null
+  } | null
   activeOrg: any | null
   roles: string[]
   orgSettings: any | null
@@ -24,15 +28,34 @@ const BootstrapContext = createContext<BootstrapState | null>(null)
 let cached: BootstrapData | null = null
 let inflight: Promise<BootstrapData> | null = null
 
+async function fetchBootstrapUncached(): Promise<BootstrapData> {
+  const r = await fetch("/api/bootstrap", {
+    cache: "no-store",
+    credentials: "include",
+  })
+
+  if (!r.ok) {
+    if (r.status === 401) throw new Error("UNAUTHENTICATED")
+    throw new Error(`BOOTSTRAP_HTTP_${r.status}`)
+  }
+
+  const json = await r.json()
+  if (!json?.ok) {
+    throw new Error(json?.error?.message ?? "BOOTSTRAP_ERROR")
+  }
+
+  const data = (json.data ?? null) as BootstrapData | null
+  if (!data) throw new Error("Invalid bootstrap response")
+
+  return data
+}
+
 async function fetchBootstrap(): Promise<BootstrapData> {
   if (cached) return cached
   if (inflight) return inflight
 
-  inflight = fetch("/api/bootstrap", { cache: "no-store" })
-    .then(async (r) => {
-      const json = await r.json()
-      const data = (json?.data ?? null) as BootstrapData | null
-      if (!data) throw new Error("Invalid bootstrap response")
+  inflight = fetchBootstrapUncached()
+    .then((data) => {
       cached = data
       return data
     })
@@ -51,12 +74,17 @@ export function BootstrapProvider({ children }: { children: React.ReactNode }) {
   async function refresh() {
     setLoading(true)
     setError(null)
+
     try {
       cached = null
       const next = await fetchBootstrap()
       setData(next)
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Bootstrap failed")
+      const msg = e instanceof Error ? e.message : "Bootstrap failed"
+
+      cached = null
+      setData(null)
+      setError(msg)
     } finally {
       setLoading(false)
     }

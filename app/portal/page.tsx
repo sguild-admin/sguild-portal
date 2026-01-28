@@ -1,33 +1,46 @@
 // app/portal/page.tsx
-import { headers } from "next/headers"
-import { redirect } from "next/navigation"
+"use client"
 
-import { auth } from "@/lib/auth/auth"
-import { prisma } from "@/lib/db/prisma"
+import { useBootstrap } from "@/components/shell/bootstrap-provider"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 
-export default async function PortalIndexPage() {
-  const h = await headers()
+export default function PortalHomePage() {
+  const { data, loading } = useBootstrap()
 
+  if (loading || !data) return null
 
+  const orgName = data.activeOrg?.name ?? "No active organization"
 
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Portal</CardTitle>
+        </CardHeader>
 
+        <CardContent className="space-y-4">
+          <div className="text-sm text-muted-foreground">
+            Active organization: <span className="text-foreground">{orgName}</span>
+          </div>
 
+          <div className="flex flex-wrap gap-2">
+            {data.roles?.length ? (
+              data.roles.map((role) => (
+                <Badge key={role} variant="secondary">
+                  {role}
+                </Badge>
+              ))
+            ) : (
+              <Badge variant="secondary">No roles</Badge>
+            )}
+          </div>
 
-  const sessionRes = await auth.api.getSession({ headers: h })
-  if (!sessionRes?.session) redirect("/sign-in")
-
-  const superAdminRow = await prisma.superAdmin.findUnique({
-    where: { userId: sessionRes.user?.id ?? "" },
-    select: { id: true },
-  })
-  if (superAdminRow) redirect("/superadmin")
-
-  // Optionally, fetch roles and org info here if needed, or just redirect to a default
-  const orgId = sessionRes.session.activeOrganizationId ?? null
-  if (!orgId) redirect("/portal/orgs")
-
-  // You may want to fetch roles here if you need to route by role
-  // For now, just redirect to admin or coach as a fallback
-  // TODO: If you want role-based routing, fetch and check roles here
-  redirect("/portal/admin")
+          <p className="text-sm text-muted-foreground">
+            Use the navigation to access your tools
+          </p>
+        </CardContent>
+      </Card>
+    </div>
+  )
 }

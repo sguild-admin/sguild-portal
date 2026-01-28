@@ -9,6 +9,13 @@ export const superAdminRepo = {
     return Boolean(found)
   },
 
+  async getOrganizationBySlug(slug: string) {
+    return prisma.organization.findUnique({
+      where: { slug },
+      select: { id: true },
+    })
+  },
+
   async createOrgWithOwner(args: {
     orgId: string
     name: string
@@ -57,10 +64,37 @@ export const superAdminRepo = {
         orderBy: { createdAt: "desc" },
         take: params.limit,
         skip: params.offset,
+        include: {
+          _count: { select: { members: true } },
+        },
       }),
       prisma.organization.count({ where }),
     ])
 
     return { rows, total }
+  },
+
+  async getOrganizationById(orgId: string) {
+    return prisma.organization.findUnique({
+      where: { id: orgId },
+      include: { _count: { select: { members: true } } },
+    })
+  },
+
+  async updateOrganization(orgId: string, data: { name?: string; slug?: string }) {
+    return prisma.organization.update({
+      where: { id: orgId },
+      data: {
+        ...(data.name ? { name: data.name } : {}),
+        ...(data.slug ? { slug: data.slug } : {}),
+      },
+      include: { _count: { select: { members: true } } },
+    })
+  },
+
+  async deleteOrganization(orgId: string) {
+    return prisma.organization.delete({
+      where: { id: orgId },
+    })
   },
 }

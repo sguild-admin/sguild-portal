@@ -38,4 +38,22 @@ export const membersRepo = {
       data: { role },
     })
   },
+  create(userId: string, orgId: string, role: MemberRole) {
+    return prisma.member.create({
+      data: { userId, organizationId: orgId, role, createdAt: new Date() },
+    })
+  },
+
+  delete(memberId: string) {
+    return prisma.member.delete({
+      where: { id: memberId },
+    })
+  },
+
+  updateRoleByUserAndOrg(userId: string, orgId: string, role: MemberRole) {
+    return prisma.member.updateMany({
+      where: { userId, organizationId: orgId },
+      data: { role },
+    })
+  },
 }

@@ -25,10 +25,10 @@ export function SignInCard() {
           name: name.trim() || "User",
           email,
           password,
-          callbackURL: "/portal",
+          callbackURL: "/session",
         })
       }
-      window.location.href = "/portal"
+      window.location.href = "/session"
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Auth failed")
     } finally {

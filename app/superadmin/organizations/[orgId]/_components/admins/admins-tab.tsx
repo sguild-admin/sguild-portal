@@ -1,0 +1,269 @@
+"use client"
+
+import { useMemo, useState } from "react"
+import { toast } from "sonner"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { TableSurface } from "@/components/common/table-surface"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import { ConfirmDeleteDialog } from "@/app/superadmin/_components/confirm-delete-dialog"
+import { CreateAdminDialog } from "./create-admin-dialog"
+import { RoleDialog, type RoleDialogData } from "./role-dialog"
+import { MoreHorizontal, Trash2, UserPlus } from "lucide-react"
+
+export type AdminItem = {
+  id: string
+  role: "owner" | "admin" | "coach" | "member"
+  createdAt: string | Date
+  user: { id: string; name: string | null; email: string | null }
+}
+
+type ApiOk<T> = { ok: true; data: T }
+type ApiFail = { ok: false; error: string }
+type ApiResponse<T> = ApiOk<T> | ApiFail
+
+async function apiUpdateRole(orgId: string, memberId: string, role: AdminItem["role"]) {
+  const res = await fetch(`/api/super-admin/orgs/${orgId}/admins/${memberId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ role }),
+  })
+
+  const json = (await res.json()) as ApiResponse<AdminItem>
+  if (!json.ok) throw new Error(json.error)
+  return json.data
+}
+
+async function apiRemoveAdmin(orgId: string, memberId: string) {
+  const res = await fetch(`/api/super-admin/orgs/${orgId}/admins/${memberId}`, {
+    method: "DELETE",
+  })
+
+  const json = (await res.json()) as ApiResponse<{ id: string }>
+  if (!json.ok) throw new Error(json.error)
+  return json.data
+}
+
+function fmtDate(d: unknown) {
+  if (!d) return "—"
+  const date = typeof d === "string" || d instanceof Date ? new Date(d) : null
+  if (!date) return "—"
+  return Number.isNaN(date.getTime()) ? "—" : date.toLocaleDateString()
+}
+
+function titleCaseRole(role: AdminItem["role"]) {
+  return role.charAt(0).toUpperCase() + role.slice(1)
+}
+
+export function AdminsTab({
+  orgId,
+  admins,
+  loading,
+  onRefresh,
+  onInviteRequested,
+}: {
+  orgId: string
+  admins: AdminItem[]
+  loading: boolean
+  onRefresh: () => Promise<void>
+  onInviteRequested: (email: string) => void
+}) {
+  const [createOpen, setCreateOpen] = useState(false)
+  const [roleDialog, setRoleDialog] = useState<RoleDialogData | null>(null)
+  const [submittingRole, setSubmittingRole] = useState(false)
+  const [submittingRemoveId, setSubmittingRemoveId] = useState<string | null>(null)
+
+  const rows = useMemo(() => admins, [admins])
+
+  async function onChangeRole(role: RoleDialogData["role"]) {
+    if (!roleDialog) return
+    setSubmittingRole(true)
+    try {
+      await apiUpdateRole(orgId, roleDialog.memberId, role)
+      await onRefresh()
+      setRoleDialog(null)
+      toast.success("Role updated")
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to update role")
+    } finally {
+      setSubmittingRole(false)
+    }
+  }
+
+  async function onRemove(memberId: string) {
+    setSubmittingRemoveId(memberId)
+    try {
+      await apiRemoveAdmin(orgId, memberId)
+      await onRefresh()
+      toast.success("Admin removed")
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to remove admin")
+    } finally {
+      setSubmittingRemoveId(null)
+    }
+  }
+
+  return (
+    <div className="space-y-3">
+      <TableSurface stickyHeader>
+        {/* toolbar */}
+        <div className="flex items-center justify-between gap-4 pl-5 pr-4 py-4 border-b border-border/60 bg-card">
+          <div className="flex items-center gap-3">
+            <div className="text-sm font-medium text-foreground">Admins</div>
+            <Badge
+              variant="outline"
+              className="rounded-full px-2 py-0 text-xs text-muted-foreground"
+            >
+              {rows.length}
+            </Badge>
+          </div>
+
+          <Button variant="outline" onClick={() => setCreateOpen(true)} type="button">
+            Create admin
+          </Button>
+        </div>
+
+        <Table className="min-w-[900px]">
+          <TableHeader className="bg-muted/20">
+            <TableRow className="hover:bg-transparent">
+              <TableHead className="text-xs">User</TableHead>
+              <TableHead className="w-[220px] text-center text-xs">Role</TableHead>
+              <TableHead className="w-[160px] text-right text-xs">Created</TableHead>
+              <TableHead className="w-[72px] pr-4 text-right text-xs">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+
+          <TableBody>
+            {loading ? (
+              <TableRow className="hover:bg-transparent">
+                <TableCell colSpan={4} className="py-10">
+                  <div className="space-y-1 text-center">
+                    <div className="text-sm font-medium text-foreground">Loading admins</div>
+                    <div className="text-sm text-muted-foreground">
+                      Fetching organization admins
+                    </div>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : rows.length === 0 ? (
+              <TableRow className="hover:bg-transparent">
+                <TableCell colSpan={4} className="py-10">
+                  <div className="mx-auto max-w-xl rounded-lg border border-dashed border-border/70 bg-muted/10 p-8">
+                    <div className="flex items-start gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-md bg-background border border-border/60 shadow-sm">
+                        <UserPlus className="h-5 w-5 text-muted-foreground" />
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-sm font-medium text-foreground">No admins yet</div>
+                        <div className="text-sm text-muted-foreground">
+                          Add an admin to help manage this organization
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : (
+              rows.map((admin) => (
+                <TableRow key={admin.id} className="hover:bg-muted/20">
+                  <TableCell className="py-5">
+                    <div className="space-y-1">
+                      <div className="text-sm font-medium text-foreground">
+                        {admin.user.name ?? "Unnamed"}
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        {admin.user.email ?? "—"}
+                      </div>
+                    </div>
+                  </TableCell>
+
+                  <TableCell className="py-5 text-center">
+                    <Badge variant="secondary" className="rounded-full text-foreground/80">
+                      {titleCaseRole(admin.role)}
+                    </Badge>
+                  </TableCell>
+
+                  <TableCell className="py-5 text-right tabular-nums text-foreground/80">
+                    {fmtDate(admin.createdAt)}
+                  </TableCell>
+
+                  <TableCell className="py-5 pr-2 text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" aria-label="Open menu">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={() =>
+                            setRoleDialog({
+                              memberId: admin.id,
+                              name: admin.user.name ?? admin.user.email ?? "User",
+                              role: admin.role,
+                            })
+                          }
+                        >
+                          Change role
+                        </DropdownMenuItem>
+
+                        <DropdownMenuSeparator />
+
+                        <ConfirmDeleteDialog
+                          title="Remove admin"
+                          description="This removes the user’s admin access for this organization."
+                          confirmLabel="Remove"
+                          confirmLoading={submittingRemoveId === admin.id}
+                          onConfirm={() => onRemove(admin.id)}
+                        >
+                          <DropdownMenuItem className="text-destructive focus:text-destructive">
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Remove
+                          </DropdownMenuItem>
+                        </ConfirmDeleteDialog>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </TableSurface>
+
+      <CreateAdminDialog
+        orgId={orgId}
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        onCreated={async () => {
+          setCreateOpen(false)
+          await onRefresh()
+        }}
+        onInviteInstead={(email) => onInviteRequested(email)}
+      />
+
+      <RoleDialog
+        open={!!roleDialog}
+        data={roleDialog}
+        onOpenChange={(v) => (!v ? setRoleDialog(null) : null)}
+        onSubmit={onChangeRole}
+        submitting={submittingRole}
+      />
+    </div>
+  )
+}

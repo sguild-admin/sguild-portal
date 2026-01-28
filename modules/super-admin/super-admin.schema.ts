@@ -26,6 +26,17 @@ export const superAdminSchemas = {
     name: z.string().trim().min(2).max(80),
   }),
 
+  updateOrg: z.object({
+    name: z.string().trim().min(2).max(80).optional(),
+    slug: z
+      .string()
+      .trim()
+      .min(2)
+      .max(80)
+      .regex(/^[a-z0-9-]+$/)
+      .optional(),
+  }),
+
   listOrgs: z.object({
     q: z.string().optional(),
     limit: z.coerce.number().int().min(1).max(500).optional(),
@@ -51,6 +62,7 @@ export const superAdminSchemas = {
 export type CreateUserInput = z.infer<typeof superAdminSchemas.createUser>
 export type ListUsersInput = z.infer<typeof superAdminSchemas.listUsers>
 export type CreateOrgInput = z.infer<typeof superAdminSchemas.createOrg>
+export type UpdateOrgInput = z.infer<typeof superAdminSchemas.updateOrg>
 export type ListOrgsInput = z.infer<typeof superAdminSchemas.listOrgs>
 export type AddOrgMemberInput = z.infer<typeof superAdminSchemas.addOrgMember>
 export type InviteOrgMemberInput = z.infer<typeof superAdminSchemas.inviteOrgMember>

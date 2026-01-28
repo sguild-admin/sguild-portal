@@ -7,50 +7,38 @@ datasource db {
 }
 
 model OrgSettings {
-  id    String       @id @default(uuid())
-  orgId String       @unique
-  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
-
-  timeZone      String   @default("America/Chicago")
-  currency      String   @default("USD")
-  acuityEnabled Boolean  @default(false)
+  id            String       @id @default(uuid())
+  orgId         String       @unique
+  timeZone      String       @default("America/Chicago")
+  currency      String       @default("USD")
+  acuityEnabled Boolean      @default(false)
   acuityUserId  String?
   acuityApiKey  String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  org           Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
 
   @@map("org_settings")
 }
 
 model CoachProfile {
-  id String @id @default(uuid())
-
-  orgId String
-  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
-
-  userId String
-  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  status CoachStatus @default(ACTIVE)
-
-  bio   String?
-  notes String?
-  zip   String?
-  phone String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id        String       @id @default(uuid())
+  orgId     String
+  userId    String
+  status    CoachStatus  @default(ACTIVE)
+  bio       String?
+  notes     String?
+  zip       String?
+  phone     String?
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  org       Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([orgId, userId])
   @@index([orgId])
   @@index([userId])
   @@map("coach_profile")
-}
-
-enum CoachStatus {
-  ACTIVE
-  DISABLED
 }
 
 model RateLimit {
@@ -70,50 +58,40 @@ model SuperAdmin {
   @@map("super_admin")
 }
 
-//
-// Better Auth tables (generated and owned by Better Auth)
-//
-
 model User {
-  id            String   @id
+  id            String         @id
   name          String
-  email         String
-  emailVerified Boolean  @default(false)
+  email         String         @unique
+  emailVerified Boolean        @default(false)
   image         String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  sessions    Session[]
-  accounts    Account[]
-  members     Member[]
-  invitations Invitation[]
-
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  banExpires    DateTime?
+  banReason     String?
+  banned        Boolean?       @default(false)
+  role          String?
+  accounts      Account[]
   coachProfiles CoachProfile[]
+  invitations   Invitation[]
+  members       Member[]
+  sessions      Session[]
 
-  role       String?
-  banned     Boolean?  @default(false)
-  banReason  String?
-  banExpires DateTime?
-
-  @@unique([email])
   @@map("user")
 }
 
 model Session {
   id                   String   @id
   expiresAt            DateTime
-  token                String
+  token                String   @unique
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
   ipAddress            String?
   userAgent            String?
   userId               String
-  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   activeOrganizationId String?
+  impersonatedBy       String?
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  impersonatedBy String?
-
-  @@unique([token])
   @@index([userId])
   @@map("session")
 }
@@ -123,7 +101,6 @@ model Account {
   accountId             String
   providerId            String
   userId                String
-  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   accessToken           String?
   refreshToken          String?
   idToken               String?
@@ -133,6 +110,7 @@ model Account {
   password              String?
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@map("account")
@@ -151,50 +129,59 @@ model Verification {
 }
 
 model Organization {
-  id        String   @id
-  name      String
-  slug      String   @unique
-  logo      String?
-  metadata  String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  members     Member[]
-  invitations Invitation[]
-  settings    OrgSettings?
-
+  id            String         @id
+  name          String
+  slug          String         @unique
+  logo          String?
+  metadata      String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
   coachProfiles CoachProfile[]
+  invitations   Invitation[]
+  members       Member[]
+  settings      OrgSettings?
 
   @@map("organization")
 }
 
 model Member {
-  id             String       @id
+  id             String       @id @default(uuid())
   organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   userId         String
-  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   role           String       @default("member")
-  createdAt      DateTime
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@unique([organizationId, userId])
   @@index([organizationId])
   @@index([userId])
   @@map("member")
 }
 
 model Invitation {
-  id             String       @id
+  id             String       @id @default(uuid())
   organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   email          String
-  role           String?
-  status         String       @default("pending")
+  role           String
   expiresAt      DateTime
   createdAt      DateTime     @default(now())
   inviterId      String
-  user           User         @relation(fields: [inviterId], references: [id], onDelete: Cascade)
+  acceptedAt     DateTime?
+  tokenHash      String       @unique
+  lastSentAt     DateTime?
+  revokedAt      DateTime?
+  tokenLast4     String?
+  inviter        User         @relation(fields: [inviterId], references: [id], onDelete: Cascade)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
   @@index([email])
+  @@index([organizationId, email])
   @@map("invitation")
+}
+
+enum CoachStatus {
+  ACTIVE
+  DISABLED
 }

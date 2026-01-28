@@ -12,6 +12,7 @@ export type SuperAdminOrgDto = {
   slug?: string | null
   logo?: string | null
   createdAt?: unknown
+  _count?: { members: number }
 }
 
 export function toSuperAdminUserDto(u: any): SuperAdminUserDto {
@@ -31,5 +32,6 @@ export function toSuperAdminOrgDto(o: any): SuperAdminOrgDto {
     slug: o?.slug ?? null,
     logo: o?.logo ?? null,
     createdAt: o?.createdAt,
+    _count: o?._count ? { members: Number(o._count.members ?? 0) } : undefined,
   }
 }

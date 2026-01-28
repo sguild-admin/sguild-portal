@@ -9,7 +9,7 @@ type PortalShellProps = {
 
 export function PortalShell({ children }: PortalShellProps) {
   return (
-    <div className="min-h-dvh bg-background text-foreground">
+    <div className="min-h-dvh bg-muted/30 text-foreground dark:bg-background">
       <PortalHeader />
 
       <div className="mx-auto w-full max-w-7xl px-4 py-6">

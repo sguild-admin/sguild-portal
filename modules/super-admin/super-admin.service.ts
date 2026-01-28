@@ -14,6 +14,7 @@ import type {
   InviteOrgMemberInput,
   ListOrgsInput,
   ListUsersInput,
+  UpdateOrgInput,
 } from "./super-admin.schema"
 
 export const superAdminService = {
@@ -71,6 +72,45 @@ export const superAdminService = {
     }
   },
 
+  async getOrg(headers: Headers, input: { orgId: string }) {
+    await requireSuperAdmin(headers)
+    if (!input.orgId) throw new AppError("BAD_REQUEST", "Missing orgId")
+    const org = await superAdminRepo.getOrganizationById(input.orgId)
+    if (!org) throw new AppError("NOT_FOUND", "Organization not found")
+    return toSuperAdminOrgDto(org)
+  },
+
+  async updateOrg(headers: Headers, input: { orgId: string; data: UpdateOrgInput }) {
+    await requireSuperAdmin(headers)
+
+    const existing = await superAdminRepo.getOrganizationById(input.orgId)
+    if (!existing) throw new AppError("NOT_FOUND", "Organization not found")
+
+    if (input.data.slug && input.data.slug !== existing.slug) {
+      const bySlug = await superAdminRepo.getOrganizationBySlug(input.data.slug)
+      if (bySlug && bySlug.id !== input.orgId) {
+        throw new AppError("BAD_REQUEST", "Slug already in use")
+      }
+    }
+
+    const updated = await superAdminRepo.updateOrganization(input.orgId, {
+      name: input.data.name,
+      slug: input.data.slug,
+    })
+
+    return toSuperAdminOrgDto(updated)
+  },
+
+  async deleteOrg(headers: Headers, input: { orgId: string }) {
+    await requireSuperAdmin(headers)
+
+    const existing = await superAdminRepo.getOrganizationById(input.orgId)
+    if (!existing) throw new AppError("NOT_FOUND", "Organization not found")
+
+    await superAdminRepo.deleteOrganization(input.orgId)
+    return { id: input.orgId }
+  },
+
   async createOrg(headers: Headers, input: CreateOrgInput) {
     await requireSuperAdmin(headers)
     const session = await requireSession(headers)
@@ -93,7 +133,8 @@ export const superAdminService = {
       ownerUserId: session.userId,
     })
 
-    return toSuperAdminOrgDto(org)
+    const orgWithCounts = await superAdminRepo.getOrganizationById(org.id)
+    return toSuperAdminOrgDto(orgWithCounts ?? org)
   },
 
   async addOrgMember(headers: Headers, input: AddOrgMemberInput) {

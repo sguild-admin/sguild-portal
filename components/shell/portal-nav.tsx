@@ -32,7 +32,7 @@ export function PortalNav() {
   const items = NAV.filter((x) => x.allow(roles, superAdmin))
 
   return (
-    <nav className="rounded-xl border bg-card p-2">
+    <nav className="rounded-xl border bg-card p-2 shadow-sm">
       <div className="px-2 py-2 text-xs font-medium text-muted-foreground">Navigation</div>
       <ul className="space-y-1">
         {items.map((item) => {

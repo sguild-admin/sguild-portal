@@ -1,19 +1,33 @@
 import { z } from "zod"
 
-export const CreateInviteSchema = z.object({
-  email: z.string().trim().email(),
-  expiresInDays: z.number().int().min(1).max(365).optional(),
-  resend: z.boolean().optional(),
-})
-export type CreateInviteInput = z.infer<typeof CreateInviteSchema>
+export const inviteRoleSchema = z.enum(["admin", "owner"])
 
-export const RevokeInviteSchema = z.object({
-  invitationId: z.string().min(1),
+export const createOrgInviteSchema = z.object({
+  orgId: z.string().min(1),
+  email: z.string().email(),
+  role: inviteRoleSchema.default("admin"),
+  expiresInDays: z.number().int().min(1).max(30).default(7),
 })
-export type RevokeInviteInput = z.infer<typeof RevokeInviteSchema>
 
-export const ListInvitesSchema = z.object({
-  limit: z.number().int().min(1).max(500).optional(),
-  offset: z.number().int().min(0).optional(),
+export type CreateOrgInviteInput = z.infer<typeof createOrgInviteSchema>
+
+export const listOrgInvitesSchema = z.object({
+  orgId: z.string().min(1),
 })
-export type ListInvitesInput = z.infer<typeof ListInvitesSchema>
+export type ListOrgInvitesInput = z.infer<typeof listOrgInvitesSchema>
+
+export const resendInviteSchema = z.object({
+  inviteId: z.string().min(1),
+  expiresInDays: z.number().int().min(1).max(30).default(7),
+})
+export type ResendInviteInput = z.infer<typeof resendInviteSchema>
+
+export const revokeInviteSchema = z.object({
+  inviteId: z.string().min(1),
+})
+export type RevokeInviteInput = z.infer<typeof revokeInviteSchema>
+
+export const acceptInviteSchema = z.object({
+  token: z.string().min(20),
+})
+export type AcceptInviteInput = z.infer<typeof acceptInviteSchema>

@@ -14,7 +14,7 @@ export function PortalHeader() {
   const roles = data?.roles ?? []
 
   return (
-    <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur">
+    <header className="sticky top-0 z-40 border-b border-border/60 bg-card shadow-sm">
       <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4">
         <Link href="/portal" className="flex items-center gap-2">
           <Image src="/favicon.ico" alt="Sguild" width={22} height={22} />
