@@ -11,7 +11,6 @@ import { SuperAdminBreadcrumbs } from "@/app/superadmin/_components/superadmin-b
 import { OrgDialogs } from "@/app/superadmin/organizations/_components/orgs-dialogs"
 import { AdminsTab, type AdminItem } from "@/app/superadmin/organizations/[orgId]/_components/admins/admins-tab"
 import { InvitationsTab, type InviteItem } from "@/app/superadmin/organizations/[orgId]/_components/invites/invitations-tab"
-import { OverviewTab } from "@/app/superadmin/organizations/[orgId]/_components/overview/overview-tab"
 import { Trash2 } from "lucide-react"
 import { PageScaffold } from "@/components/shell/page-scaffold"
 
@@ -27,7 +26,7 @@ type ApiOk<T> = { ok: true; data: T }
 type ApiFail = { ok: false; error: string; code?: string }
 type ApiResponse<T> = ApiOk<T> | ApiFail
 
-type TabKey = "overview" | "admins" | "invitations"
+type TabKey = "admins" | "invitations"
 
 type InvitePrefill = {
   email: string
@@ -56,7 +55,7 @@ async function apiGetInvites(orgId: string): Promise<InviteItem[]> {
 
 export function OrgDetailClient({ org }: { org: OrgDto }) {
   const router = useRouter()
-  const [tab, setTab] = useState<TabKey>("overview")
+  const [tab, setTab] = useState<TabKey>("admins")
 
   const [admins, setAdmins] = useState<AdminItem[]>([])
   const [invites, setInvites] = useState<InviteItem[]>([])
@@ -172,7 +171,6 @@ export function OrgDetailClient({ org }: { org: OrgDto }) {
       <Tabs value={tab} onValueChange={(value) => setTab(value as TabKey)}>
         <div className="mb-3">
           <TabsList>
-            <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="admins">Admins</TabsTrigger>
             <TabsTrigger value="invitations" className="gap-2">
               Invitations
@@ -184,15 +182,6 @@ export function OrgDetailClient({ org }: { org: OrgDto }) {
             </TabsTrigger>
           </TabsList>
         </div>
-
-        <TabsContent value="overview">
-          <OverviewTab
-            org={org}
-            adminsCount={admins.length}
-            pendingInvites={pendingInvites}
-            invitesCount={invites.length}
-          />
-        </TabsContent>
 
         <TabsContent value="admins">
           <AdminsTab

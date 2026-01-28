@@ -88,7 +88,7 @@ export function InvitationsTab({
   onInvitePrefillChange,
 }: {
   orgId: string
-  activeTab: "overview" | "admins" | "invitations"
+  activeTab: "admins" | "invitations"
   invites: InviteItem[]
   loading: boolean
   onRefresh: () => Promise<void>
@@ -172,6 +172,34 @@ export function InvitationsTab({
     }
   }
 
+  const pagination = (
+    <div className="flex items-center justify-between px-4 py-3 text-xs text-muted-foreground">
+      <div className="tabular-nums">
+        {pageStart} to {pageEnd} of {totalRows}
+      </div>
+      <div className="flex items-center gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          type="button"
+          disabled={clampedPage === 0}
+          onClick={() => setPage((prev) => Math.max(0, prev - 1))}
+        >
+          Previous
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          type="button"
+          disabled={clampedPage >= totalPages - 1}
+          onClick={() => setPage((prev) => Math.min(totalPages - 1, prev + 1))}
+        >
+          Next
+        </Button>
+      </div>
+    </div>
+  )
+
   return (
     <div className="space-y-3">
       <Card>
@@ -228,8 +256,101 @@ export function InvitationsTab({
             </div>
           ) : (
             <>
+              <div className="md:hidden">
+                <div className="divide-y divide-border">
+                  {pagedRows.map((inv) => {
+                    const busy = submittingInviteId === inv.id
+                    const roleLabel = inv.role
+                      ? inv.role.charAt(0).toUpperCase() + inv.role.slice(1)
+                      : "—"
+                    const roleVariant = inv.role === "coach" ? "secondary" : "default"
+                    const statusLabel = inv.status.charAt(0) + inv.status.slice(1).toLowerCase()
+                    const statusVariant =
+                      inv.status === "PENDING"
+                        ? "outline"
+                        : inv.status === "ACCEPTED"
+                          ? "default"
+                          : "secondary"
+
+                    return (
+                      <div key={inv.id} className="p-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="space-y-2">
+                            <div className="text-sm font-medium text-foreground">{inv.email}</div>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <Badge variant={roleVariant}>{roleLabel}</Badge>
+                              <Badge variant={statusVariant}>{statusLabel}</Badge>
+                            </div>
+                          </div>
+
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" aria-label="Open menu">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              {inv.status === "PENDING" || inv.status === "EXPIRED" ? (
+                                <DropdownMenuItem disabled={busy} onClick={() => onResend(inv.id)}>
+                                  Resend
+                                </DropdownMenuItem>
+                              ) : null}
+
+                              {inv.status === "PENDING" ? (
+                                <ConfirmDeleteDialog
+                                  title="Revoke invite"
+                                  description="This revokes the invite immediately."
+                                  confirmLabel="Revoke"
+                                  confirmLoading={busy}
+                                  onConfirm={() => onRevoke(inv.id)}
+                                >
+                                  <DropdownMenuItem className="text-destructive">
+                                    <Ban className="mr-2 h-4 w-4" />
+                                    Revoke
+                                  </DropdownMenuItem>
+                                </ConfirmDeleteDialog>
+                              ) : null}
+
+                              {inv.status === "REVOKED" ? (
+                                <>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    onClick={() => {
+                                      const role = inv.role === "owner" ? "owner" : "admin"
+                                      onInvitePrefillChange({ email: inv.email, role })
+                                      onInviteDialogOpenChange(true)
+                                    }}
+                                  >
+                                    Re-invite
+                                  </DropdownMenuItem>
+                                </>
+                              ) : null}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+
+                        <div className="mt-3 grid grid-cols-2 gap-3 text-xs text-muted-foreground">
+                          <div className="rounded-md border border-border/60 px-2 py-2">
+                            <div className="text-[11px] uppercase tracking-wide">Sent</div>
+                            <div className="mt-1 text-sm font-semibold text-foreground">
+                              {fmtDate(inv.lastSentAt)}
+                            </div>
+                          </div>
+                          <div className="rounded-md border border-border/60 px-2 py-2">
+                            <div className="text-[11px] uppercase tracking-wide">Expires</div>
+                            <div className="mt-1 text-sm font-semibold text-foreground">
+                              {fmtDate(inv.expiresAt)}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+
               <TableSurface stickyHeader className="border-0 shadow-none">
-                <Table className="min-w-[900px]">
+                <Table className="hidden min-w-[900px] md:table">
                   <TableHeader className="bg-muted/40">
                     <TableRow className="hover:bg-transparent border-b border-border/60">
                       <TableHead className="text-xs">Email</TableHead>
@@ -273,47 +394,50 @@ export function InvitationsTab({
                           <TableCell className="pr-2">
                             <div className="flex justify-end">
                               <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" aria-label="Open menu">
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                {inv.status === "PENDING" || inv.status === "EXPIRED" ? (
-                                  <DropdownMenuItem disabled={busy} onClick={() => onResend(inv.id)}>
-                                    Resend
-                                  </DropdownMenuItem>
-                                ) : null}
-
-                                {inv.status === "PENDING" ? (
-                                  <ConfirmDeleteDialog
-                                    title="Revoke invite"
-                                    description="This revokes the invite immediately."
-                                    confirmLabel="Revoke"
-                                    confirmLoading={busy}
-                                    onConfirm={() => onRevoke(inv.id)}
-                                  >
-                                    <DropdownMenuItem className="text-destructive">
-                                      <Ban className="mr-2 h-4 w-4" />
-                                      Revoke
-                                    </DropdownMenuItem>
-                                  </ConfirmDeleteDialog>
-                                ) : null}
-
-                                {inv.status === "REVOKED" ? (
-                                  <>
-                                    <DropdownMenuSeparator />
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon" aria-label="Open menu">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  {inv.status === "PENDING" || inv.status === "EXPIRED" ? (
                                     <DropdownMenuItem
-                                      onClick={() => {
-                                        const role = inv.role === "owner" ? "owner" : "admin"
-                                        onInvitePrefillChange({ email: inv.email, role })
-                                        onInviteDialogOpenChange(true)
-                                      }}
+                                      disabled={busy}
+                                      onClick={() => onResend(inv.id)}
                                     >
-                                      Re-invite
+                                      Resend
                                     </DropdownMenuItem>
-                                  </>
-                                ) : null}
+                                  ) : null}
+
+                                  {inv.status === "PENDING" ? (
+                                    <ConfirmDeleteDialog
+                                      title="Revoke invite"
+                                      description="This revokes the invite immediately."
+                                      confirmLabel="Revoke"
+                                      confirmLoading={busy}
+                                      onConfirm={() => onRevoke(inv.id)}
+                                    >
+                                      <DropdownMenuItem className="text-destructive">
+                                        <Ban className="mr-2 h-4 w-4" />
+                                        Revoke
+                                      </DropdownMenuItem>
+                                    </ConfirmDeleteDialog>
+                                  ) : null}
+
+                                  {inv.status === "REVOKED" ? (
+                                    <>
+                                      <DropdownMenuSeparator />
+                                      <DropdownMenuItem
+                                        onClick={() => {
+                                          const role = inv.role === "owner" ? "owner" : "admin"
+                                          onInvitePrefillChange({ email: inv.email, role })
+                                          onInviteDialogOpenChange(true)
+                                        }}
+                                      >
+                                        Re-invite
+                                      </DropdownMenuItem>
+                                    </>
+                                  ) : null}
                                 </DropdownMenuContent>
                               </DropdownMenu>
                             </div>
@@ -324,31 +448,7 @@ export function InvitationsTab({
                   </TableBody>
                 </Table>
               </TableSurface>
-              <div className="flex items-center justify-between px-4 py-3 text-xs text-muted-foreground">
-                <div className="tabular-nums">
-                  {pageStart} to {pageEnd} of {totalRows}
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    type="button"
-                    disabled={clampedPage === 0}
-                    onClick={() => setPage((prev) => Math.max(0, prev - 1))}
-                  >
-                    Previous
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    type="button"
-                    disabled={clampedPage >= totalPages - 1}
-                    onClick={() => setPage((prev) => Math.min(totalPages - 1, prev + 1))}
-                  >
-                    Next
-                  </Button>
-                </div>
-              </div>
+              {pagination}
             </>
           )}
         </CardContent>

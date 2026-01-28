@@ -89,6 +89,29 @@ export function AdminsTab({
 
   const rows = useMemo(() => admins, [admins])
 
+  const loadingState = (
+    <div className="space-y-1 text-center">
+      <div className="text-sm font-medium text-foreground">Loading admins</div>
+      <div className="text-sm text-muted-foreground">Fetching organization admins</div>
+    </div>
+  )
+
+  const emptyState = (
+    <div className="mx-auto max-w-xl rounded-lg border border-dashed border-border/70 bg-muted/10 p-8">
+      <div className="flex items-start gap-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-md bg-background border border-border/60 shadow-sm">
+          <UserPlus className="h-5 w-5 text-muted-foreground" />
+        </div>
+        <div className="space-y-1">
+          <div className="text-sm font-medium text-foreground">No admins yet</div>
+          <div className="text-sm text-muted-foreground">
+            Add an admin to help manage this organization
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+
   async function onChangeRole(role: RoleDialogData["role"]) {
     if (!roleDialog) return
     setSubmittingRole(true)
@@ -137,7 +160,79 @@ export function AdminsTab({
           </Button>
         </div>
 
-        <Table className="min-w-[900px]">
+        <div className="md:hidden">
+          {loading ? (
+            <div className="px-6 py-10">{loadingState}</div>
+          ) : rows.length === 0 ? (
+            <div className="px-6 py-10">{emptyState}</div>
+          ) : (
+            <div className="divide-y divide-border">
+              {rows.map((admin) => (
+                <div key={admin.id} className="p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-1">
+                      <div className="text-sm font-medium text-foreground">
+                        {admin.user.name ?? "Unnamed"}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {admin.user.email ?? "—"}
+                      </div>
+                      <Badge variant="secondary" className="mt-2 w-fit rounded-full text-foreground/80">
+                        {titleCaseRole(admin.role)}
+                      </Badge>
+                    </div>
+
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" aria-label="Open menu">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={() =>
+                            setRoleDialog({
+                              memberId: admin.id,
+                              name: admin.user.name ?? admin.user.email ?? "User",
+                              role: admin.role,
+                            })
+                          }
+                        >
+                          Change role
+                        </DropdownMenuItem>
+
+                        <DropdownMenuSeparator />
+
+                        <ConfirmDeleteDialog
+                          title="Remove admin"
+                          description="This removes the user’s admin access for this organization."
+                          confirmLabel="Remove"
+                          confirmLoading={submittingRemoveId === admin.id}
+                          onConfirm={() => onRemove(admin.id)}
+                        >
+                          <DropdownMenuItem className="text-destructive focus:text-destructive">
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Remove
+                          </DropdownMenuItem>
+                        </ConfirmDeleteDialog>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+
+                  <div className="mt-3 text-xs text-muted-foreground">
+                    <div className="text-[11px] uppercase tracking-wide">Created</div>
+                    <div className="mt-1 text-sm font-semibold text-foreground">
+                      {fmtDate(admin.createdAt)}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <Table className="hidden min-w-[900px] md:table">
           <TableHeader className="bg-muted/20">
             <TableRow className="hover:bg-transparent">
               <TableHead className="text-xs">User</TableHead>
@@ -151,30 +246,13 @@ export function AdminsTab({
             {loading ? (
               <TableRow className="hover:bg-transparent">
                 <TableCell colSpan={4} className="py-10">
-                  <div className="space-y-1 text-center">
-                    <div className="text-sm font-medium text-foreground">Loading admins</div>
-                    <div className="text-sm text-muted-foreground">
-                      Fetching organization admins
-                    </div>
-                  </div>
+                  {loadingState}
                 </TableCell>
               </TableRow>
             ) : rows.length === 0 ? (
               <TableRow className="hover:bg-transparent">
                 <TableCell colSpan={4} className="py-10">
-                  <div className="mx-auto max-w-xl rounded-lg border border-dashed border-border/70 bg-muted/10 p-8">
-                    <div className="flex items-start gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-md bg-background border border-border/60 shadow-sm">
-                        <UserPlus className="h-5 w-5 text-muted-foreground" />
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-sm font-medium text-foreground">No admins yet</div>
-                        <div className="text-sm text-muted-foreground">
-                          Add an admin to help manage this organization
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                  {emptyState}
                 </TableCell>
               </TableRow>
             ) : (
