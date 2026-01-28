@@ -75,32 +75,49 @@ export function OrgsTable({
   )
 
   return (
-    <TableSurface stickyHeader>
+    <TableSurface
+      stickyHeader
+      className="rounded-none border-0 bg-transparent shadow-none md:rounded-lg md:border md:bg-card md:shadow-sm"
+    >
       <div className="md:hidden">
         {orgs.length === 0 ? (
           <div className="px-6 py-10">{emptyState}</div>
         ) : (
-          <div className="divide-y divide-border">
+          <div className="space-y-3 px-4 pb-4">
             {orgs.map((org) => {
               const meta = counts[org.id]
               return (
-                <div key={org.id} className="p-4">
+                <div
+                  key={org.id}
+                  className="cursor-pointer rounded-lg border border-border/60 bg-card p-4"
+                  onClick={() => onRowClick(org)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault()
+                      onRowClick(org)
+                    }
+                  }}
+                >
                   <div className="flex items-start justify-between gap-3">
-                    <button
-                      className="flex-1 text-left"
-                      type="button"
-                      onClick={() => onRowClick(org)}
-                    >
+                    <div className="flex-1 text-left">
                       <div className="text-sm font-semibold">{org.name}</div>
                       <div className="mt-1 text-xs text-muted-foreground">{org.slug ?? "—"}</div>
                       <div className="mt-2 font-mono text-[11px] text-muted-foreground/80">
                         {org.id}
                       </div>
-                    </button>
+                    </div>
 
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" aria-label="Open menu" type="button">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          aria-label="Open menu"
+                          type="button"
+                          onClick={(event) => event.stopPropagation()}
+                        >
                           <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
@@ -139,7 +156,7 @@ export function OrgsTable({
                       </div>
                     </div>
                     <div className="rounded-md border border-border/60 px-2 py-2">
-                      <div className="text-[11px] uppercase tracking-wide">Pending</div>
+                      <div className="text-[11px] uppercase tracking-wide">Pending invites</div>
                       <div className="mt-1 text-sm font-semibold text-foreground">
                         {meta?.pendingInvites ?? "—"}
                       </div>
