@@ -58,9 +58,107 @@ export function OrgsTable({
   onCreate?: () => void
   deletingId?: string | null
 }) {
+  const emptyState = (
+    <div className="mx-auto max-w-xl">
+      <div className="flex items-start gap-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-md bg-background shadow-sm">
+          <Building2 className="h-5 w-5 text-muted-foreground" />
+        </div>
+        <div className="space-y-2">
+          <div className="text-sm font-medium">No organizations yet</div>
+          <div className="text-sm text-muted-foreground">
+            Create an organization to start managing members
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+
   return (
     <TableSurface stickyHeader>
-      <Table className="w-full min-w-[760px]">
+      <div className="md:hidden">
+        {orgs.length === 0 ? (
+          <div className="px-6 py-10">{emptyState}</div>
+        ) : (
+          <div className="divide-y divide-border">
+            {orgs.map((org) => {
+              const meta = counts[org.id]
+              return (
+                <div key={org.id} className="p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <button
+                      className="flex-1 text-left"
+                      type="button"
+                      onClick={() => onRowClick(org)}
+                    >
+                      <div className="text-sm font-semibold">{org.name}</div>
+                      <div className="mt-1 text-xs text-muted-foreground">{org.slug ?? "—"}</div>
+                      <div className="mt-2 font-mono text-[11px] text-muted-foreground/80">
+                        {org.id}
+                      </div>
+                    </button>
+
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" aria-label="Open menu" type="button">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => onEdit(org)}>Edit</DropdownMenuItem>
+                        <DropdownMenuSeparator />
+
+                        <ConfirmDeleteDialog
+                          title="Delete organization"
+                          description="This permanently deletes the organization and its data."
+                          confirmLabel="Delete"
+                          confirmLoading={deletingId === org.id}
+                          onConfirm={() => onDelete(org)}
+                        >
+                          <DropdownMenuItem className="text-destructive focus:text-destructive">
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete
+                          </DropdownMenuItem>
+                        </ConfirmDeleteDialog>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+
+                  <div className="mt-3 grid grid-cols-2 gap-3 text-xs text-muted-foreground">
+                    <div className="rounded-md border border-border/60 px-2 py-2">
+                      <div className="text-[11px] uppercase tracking-wide">Members</div>
+                      <div className="mt-1 text-sm font-semibold text-foreground">
+                        {typeof org._count?.members === "number" ? org._count.members : "—"}
+                      </div>
+                    </div>
+                    <div className="rounded-md border border-border/60 px-2 py-2">
+                      <div className="text-[11px] uppercase tracking-wide">Admins</div>
+                      <div className="mt-1 text-sm font-semibold text-foreground">
+                        {meta?.admins ?? "—"}
+                      </div>
+                    </div>
+                    <div className="rounded-md border border-border/60 px-2 py-2">
+                      <div className="text-[11px] uppercase tracking-wide">Pending</div>
+                      <div className="mt-1 text-sm font-semibold text-foreground">
+                        {meta?.pendingInvites ?? "—"}
+                      </div>
+                    </div>
+                    <div className="rounded-md border border-border/60 px-2 py-2">
+                      <div className="text-[11px] uppercase tracking-wide">Created</div>
+                      <div className="mt-1 text-sm font-semibold text-foreground">
+                        {fmtDate(org.createdAt)}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+
+      <Table className="hidden w-full min-w-[760px] md:table">
         <TableHeader>
           <TableRow className="hover:bg-transparent">
             <TableHead>Organization</TableHead>
@@ -77,19 +175,7 @@ export function OrgsTable({
           {orgs.length === 0 ? (
             <TableRow className="hover:bg-transparent">
               <TableCell colSpan={7} className="py-10">
-                <div className="mx-auto max-w-xl">
-                  <div className="flex items-start gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-md bg-background shadow-sm">
-                      <Building2 className="h-5 w-5 text-muted-foreground" />
-                    </div>
-                    <div className="space-y-2">
-                      <div className="text-sm font-medium">No organizations yet</div>
-                      <div className="text-sm text-muted-foreground">
-                        Create an organization to start managing members
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                {emptyState}
               </TableCell>
             </TableRow>
           ) : (
