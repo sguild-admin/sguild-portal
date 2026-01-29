@@ -14,7 +14,7 @@ import { CoachesTab, type CoachItem } from "@/app/superadmin/organizations/[orgI
 import { InvitationsTab, type InviteItem } from "@/app/superadmin/organizations/[orgId]/_components/invites/invitations-tab"
 import { InviteDialog } from "@/app/superadmin/organizations/[orgId]/_components/invites/invite-dialog"
 import { InviteLinkDialog } from "@/app/superadmin/organizations/[orgId]/_components/invites/invite-link-dialog"
-import { Trash2 } from "lucide-react"
+import { Clock, Trash2, Waves } from "lucide-react"
 import { PageScaffold } from "@/components/shell/page-scaffold"
 
 export type OrgDto = {
@@ -167,13 +167,15 @@ export function OrgDetailClient({ org }: { org: OrgDto }) {
             {org.slug ?? "—"}
           </div>
           {org.settings?.timeZone ? (
-            <div className="inline-flex items-center rounded-md border border-border/60 bg-muted/20 px-2 py-0.5 text-xs text-foreground/70">
+            <div className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-muted/20 px-2 py-0.5 text-xs text-foreground/70">
+              <Clock className="h-3.5 w-3.5" />
               {org.settings.timeZone}
             </div>
           ) : null}
           {org.settings?.offersOceanLessons ? (
-            <div className="inline-flex items-center rounded-md border border-border/60 bg-muted/20 px-2 py-0.5 text-xs text-foreground/70">
-              Ocean lessons
+            <div className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-muted/20 px-2 py-0.5 text-xs text-foreground/70">
+              <Waves className="h-3.5 w-3.5" />
+              Ocean Lessons
             </div>
           ) : null}
         </div>
