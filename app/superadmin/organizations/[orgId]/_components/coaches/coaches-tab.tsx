@@ -8,7 +8,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { TableSurface } from "@/components/common/table-surface"
@@ -22,7 +21,6 @@ import {
 } from "@/components/ui/table"
 import { ConfirmDeleteDialog } from "@/app/superadmin/_components/confirm-delete-dialog"
 import { MoreHorizontal, Trash2, Users } from "lucide-react"
-import { CoachRoleDialog, type CoachRoleDialogData } from "./coach-role-dialog"
 import { rolePillClass } from "@/app/superadmin/organizations/_components/role-pill"
 
 export type CoachItem = {
@@ -35,18 +33,6 @@ export type CoachItem = {
 type ApiOk<T> = { ok: true; data: T }
 type ApiFail = { ok: false; error: string }
 type ApiResponse<T> = ApiOk<T> | ApiFail
-
-async function apiUpdateRole(orgId: string, memberId: string, role: CoachItem["role"]) {
-  const res = await fetch(`/api/super-admin/orgs/${orgId}/coaches/${memberId}`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ role }),
-  })
-
-  const json = (await res.json()) as ApiResponse<CoachItem>
-  if (!json.ok) throw new Error(json.error)
-  return json.data
-}
 
 async function apiRemoveCoach(orgId: string, memberId: string) {
   const res = await fetch(`/api/super-admin/orgs/${orgId}/coaches/${memberId}`, {
@@ -97,11 +83,14 @@ export function CoachesTab({
   onRefresh: () => Promise<void>
   onInviteRequested: (email: string) => void
 }) {
-  const [roleDialog, setRoleDialog] = useState<CoachRoleDialogData | null>(null)
-  const [submittingRole, setSubmittingRole] = useState(false)
   const [submittingRemoveId, setSubmittingRemoveId] = useState<string | null>(null)
+  const [removeDialogId, setRemoveDialogId] = useState<string | null>(null)
 
   const rows = useMemo(() => coaches, [coaches])
+  const removeTarget = useMemo(
+    () => (removeDialogId ? rows.find((coach) => coach.id === removeDialogId) ?? null : null),
+    [removeDialogId, rows]
+  )
 
   const loadingState = (
     <div className="space-y-1 text-center">
@@ -125,21 +114,6 @@ export function CoachesTab({
       </div>
     </div>
   )
-
-  async function onChangeRole(role: CoachRoleDialogData["role"]) {
-    if (!roleDialog) return
-    setSubmittingRole(true)
-    try {
-      await apiUpdateRole(orgId, roleDialog.memberId, role)
-      await onRefresh()
-      setRoleDialog(null)
-      toast.success("Role updated")
-    } catch (e) {
-      toast.error(getOwnerGuardMessage(e))
-    } finally {
-      setSubmittingRole(false)
-    }
-  }
 
   async function onRemove(memberId: string) {
     setSubmittingRemoveId(memberId)
@@ -200,31 +174,12 @@ export function CoachesTab({
 
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem
-                          onClick={() =>
-                            setRoleDialog({
-                              memberId: coach.id,
-                              name: coach.user.name ?? coach.user.email ?? "User",
-                              role: coach.role,
-                            })
-                          }
+                          className="text-destructive focus:text-destructive"
+                          onSelect={() => setRemoveDialogId(coach.id)}
                         >
-                          Change role
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Remove
                         </DropdownMenuItem>
-
-                        <DropdownMenuSeparator />
-
-                        <ConfirmDeleteDialog
-                          title="Remove coach"
-                          description="This removes the user’s access to this organization."
-                          confirmLabel="Remove"
-                          confirmLoading={submittingRemoveId === coach.id}
-                          onConfirm={() => onRemove(coach.id)}
-                        >
-                          <DropdownMenuItem className="text-destructive focus:text-destructive">
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Remove
-                          </DropdownMenuItem>
-                        </ConfirmDeleteDialog>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
@@ -298,31 +253,12 @@ export function CoachesTab({
 
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem
-                          onClick={() =>
-                            setRoleDialog({
-                              memberId: coach.id,
-                              name: coach.user.name ?? coach.user.email ?? "User",
-                              role: coach.role,
-                            })
-                          }
+                          className="text-destructive focus:text-destructive"
+                          onSelect={() => setRemoveDialogId(coach.id)}
                         >
-                          Change role
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Remove
                         </DropdownMenuItem>
-
-                        <DropdownMenuSeparator />
-
-                        <ConfirmDeleteDialog
-                          title="Remove coach"
-                          description="This removes the user’s access to this organization."
-                          confirmLabel="Remove"
-                          confirmLoading={submittingRemoveId === coach.id}
-                          onConfirm={() => onRemove(coach.id)}
-                        >
-                          <DropdownMenuItem className="text-destructive focus:text-destructive">
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Remove
-                          </DropdownMenuItem>
-                        </ConfirmDeleteDialog>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
@@ -333,12 +269,21 @@ export function CoachesTab({
         </Table>
       </TableSurface>
 
-      <CoachRoleDialog
-        open={!!roleDialog}
-        data={roleDialog}
-        onOpenChange={(v) => (!v ? setRoleDialog(null) : null)}
-        onSubmit={onChangeRole}
-        submitting={submittingRole}
+      <ConfirmDeleteDialog
+        title="Remove coach"
+        description="This removes the user’s access to this organization."
+        confirmLabel="Remove"
+        confirmLoading={submittingRemoveId === removeDialogId}
+        open={!!removeDialogId}
+        onOpenChange={(open) => (!open ? setRemoveDialogId(null) : null)}
+        onConfirm={async () => {
+          if (!removeTarget) return
+          try {
+            await onRemove(removeTarget.id)
+          } finally {
+            setRemoveDialogId(null)
+          }
+        }}
       />
     </div>
   )

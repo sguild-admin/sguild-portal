@@ -19,6 +19,8 @@ export function ConfirmDeleteDialog({
   confirmLabel,
   confirmDisabled,
   confirmLoading,
+  open,
+  onOpenChange,
   onConfirm,
   children,
 }: {
@@ -27,12 +29,14 @@ export function ConfirmDeleteDialog({
   confirmLabel: string
   confirmDisabled?: boolean
   confirmLoading?: boolean
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
   onConfirm: () => void | Promise<void>
-  children: React.ReactNode
+  children?: React.ReactNode
 }) {
   return (
-    <AlertDialog>
-      <AlertDialogTrigger asChild>{children}</AlertDialogTrigger>
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
+      {children ? <AlertDialogTrigger asChild>{children}</AlertDialogTrigger> : null}
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>

@@ -1,5 +1,6 @@
 "use client"
 
+import { useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -66,6 +67,12 @@ export function OrgsTable({
   onCreate?: () => void
   deletingId?: string | null
 }) {
+  const [deleteOrgId, setDeleteOrgId] = useState<string | null>(null)
+  const deleteOrg = useMemo(
+    () => (deleteOrgId ? orgs.find((org) => org.id === deleteOrgId) ?? null : null),
+    [deleteOrgId, orgs]
+  )
+
   const emptyState = (
     <div className="mx-auto max-w-xl">
       <div className="flex items-start gap-3">
@@ -138,7 +145,10 @@ export function OrgsTable({
                           confirmLoading={deletingId === org.id}
                           onConfirm={() => onDelete(org)}
                         >
-                          <DropdownMenuItem className="text-destructive focus:text-destructive">
+                          <DropdownMenuItem
+                            className="text-destructive focus:text-destructive"
+                            onSelect={() => setDeleteOrgId(org.id)}
+                          >
                             <Trash2 className="mr-2 h-4 w-4" />
                             Delete
                           </DropdownMenuItem>
@@ -310,7 +320,10 @@ export function OrgsTable({
                           confirmLoading={deletingId === org.id}
                           onConfirm={() => onDelete(org)}
                         >
-                          <DropdownMenuItem className="text-destructive focus:text-destructive">
+                          <DropdownMenuItem
+                            className="text-destructive focus:text-destructive"
+                            onSelect={() => setDeleteOrgId(org.id)}
+                          >
                             <Trash2 className="mr-2 h-4 w-4" />
                             Delete
                           </DropdownMenuItem>
@@ -324,6 +337,23 @@ export function OrgsTable({
           )}
         </TableBody>
       </Table>
+
+      <ConfirmDeleteDialog
+        title="Delete organization"
+        description="This permanently deletes the organization and its data."
+        confirmLabel="Delete"
+        confirmLoading={deletingId === deleteOrgId}
+        open={!!deleteOrgId}
+        onOpenChange={(open) => (!open ? setDeleteOrgId(null) : null)}
+        onConfirm={async () => {
+          if (!deleteOrg) return
+          try {
+            await onDelete(deleteOrg)
+          } finally {
+            setDeleteOrgId(null)
+          }
+        }}
+      />
     </TableSurface>
   )
 }
