@@ -23,23 +23,40 @@ model OrgSettings {
 }
 
 model CoachProfile {
-  id        String       @id @default(uuid())
-  orgId     String
-  userId    String
-  status    CoachStatus  @default(ACTIVE)
-  bio       String?
-  notes     String?
-  zip       String?
-  phone     String?
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
-  org       Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
-  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id             String              @id @default(uuid())
+  orgId          String
+  userId         String
+  status         CoachStatus         @default(ACTIVE)
+  nickname       String?
+  bio            String?
+  notes          String?
+  address        String?
+  zip            String?
+  phone          String?
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  org            Organization        @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  user           User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  availabilities CoachAvailability[]
 
   @@unique([orgId, userId])
   @@index([orgId])
   @@index([userId])
   @@map("coach_profile")
+}
+
+model CoachAvailability {
+  id             String       @id @default(uuid())
+  coachProfileId String
+  dayOfWeek      Int
+  startTime      String
+  endTime        String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  coachProfile   CoachProfile @relation(fields: [coachProfileId], references: [id], onDelete: Cascade)
+
+  @@index([coachProfileId])
+  @@map("coach_availability")
 }
 
 model RateLimit {

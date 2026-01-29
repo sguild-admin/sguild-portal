@@ -4,8 +4,10 @@ export const CoachStatusSchema = z.enum(["ACTIVE", "DISABLED"])
 export type CoachStatus = z.infer<typeof CoachStatusSchema>
 
 export const UpsertCoachProfileSchema = z.object({
+  nickname: z.string().trim().max(100).nullable().optional(),
   bio: z.string().trim().min(1).max(5000).nullable().optional(),
   notes: z.string().trim().max(10000).nullable().optional(),
+  address: z.string().trim().max(500).nullable().optional(),
   zip: z.string().trim().max(20).nullable().optional(),
   phone: z.string().trim().max(50).nullable().optional(),
 })

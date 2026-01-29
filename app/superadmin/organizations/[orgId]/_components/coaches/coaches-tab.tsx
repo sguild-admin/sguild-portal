@@ -20,13 +20,15 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { ConfirmDeleteDialog } from "@/app/superadmin/_components/confirm-delete-dialog"
-import { MoreHorizontal, Trash2, Users } from "lucide-react"
+import { CoachProfileDialog, type CoachProfileDialogData } from "./coach-profile-dialog"
+import { Eye, MoreHorizontal, Power, Trash2, Users } from "lucide-react"
 import { rolePillClass } from "@/app/superadmin/organizations/_components/role-pill"
 
 export type CoachItem = {
   id: string
   role: "coach" | "member"
   createdAt: string | Date
+  status: "ACTIVE" | "DISABLED"
   user: { id: string; name: string | null; email: string | null }
 }
 
@@ -37,6 +39,22 @@ type ApiResponse<T> = ApiOk<T> | ApiFail
 async function apiRemoveCoach(orgId: string, memberId: string) {
   const res = await fetch(`/api/super-admin/orgs/${orgId}/coaches/${memberId}`, {
     method: "DELETE",
+  })
+
+  const json = (await res.json()) as ApiResponse<{ id: string }>
+  if (!json.ok) throw new Error(json.error)
+  return json.data
+}
+
+async function apiUpdateCoachStatus(
+  orgId: string,
+  memberId: string,
+  status: CoachItem["status"]
+) {
+  const res = await fetch(`/api/super-admin/orgs/${orgId}/coaches/${memberId}/profile`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ status }),
   })
 
   const json = (await res.json()) as ApiResponse<{ id: string }>
@@ -58,6 +76,16 @@ function titleCaseRole(role: CoachItem["role"]) {
 function getRolePillClass(role: CoachItem["role"]) {
   const key = role.toUpperCase() as keyof typeof rolePillClass
   return rolePillClass[key] ?? rolePillClass.COACH
+}
+
+function getStatusBadgeClass(status: CoachItem["status"]) {
+  return status === "DISABLED"
+    ? "border-destructive/40 bg-destructive/10 text-destructive"
+    : "border-emerald-500/30 bg-emerald-500/10 text-emerald-700"
+}
+
+function statusLabel(status: CoachItem["status"]) {
+  return status === "DISABLED" ? "Disabled" : "Enabled"
 }
 
 function getOwnerGuardMessage(error: unknown) {
@@ -85,6 +113,8 @@ export function CoachesTab({
 }) {
   const [submittingRemoveId, setSubmittingRemoveId] = useState<string | null>(null)
   const [removeDialogId, setRemoveDialogId] = useState<string | null>(null)
+  const [submittingStatusId, setSubmittingStatusId] = useState<string | null>(null)
+  const [profileDialog, setProfileDialog] = useState<CoachProfileDialogData | null>(null)
 
   const rows = useMemo(() => coaches, [coaches])
   const removeTarget = useMemo(
@@ -128,6 +158,20 @@ export function CoachesTab({
     }
   }
 
+  async function onToggleStatus(coach: CoachItem) {
+    setSubmittingStatusId(coach.id)
+    try {
+      const nextStatus = coach.status === "DISABLED" ? "ACTIVE" : "DISABLED"
+      await apiUpdateCoachStatus(orgId, coach.id, nextStatus)
+      await onRefresh()
+      toast.success(`Coach ${nextStatus === "DISABLED" ? "disabled" : "enabled"}`)
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to update coach status")
+    } finally {
+      setSubmittingStatusId(null)
+    }
+  }
+
   return (
     <div className="space-y-3">
       <TableSurface stickyHeader>
@@ -163,6 +207,9 @@ export function CoachesTab({
                       <Badge className={`mt-2 w-fit rounded-full border ${getRolePillClass(coach.role)}`}>
                         {titleCaseRole(coach.role)}
                       </Badge>
+                      <Badge className={`mt-2 w-fit rounded-full border ${getStatusBadgeClass(coach.status)}`}>
+                        {statusLabel(coach.status)}
+                      </Badge>
                     </div>
 
                     <DropdownMenu>
@@ -173,6 +220,26 @@ export function CoachesTab({
                       </DropdownMenuTrigger>
 
                       <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onSelect={() =>
+                            setProfileDialog({
+                              memberId: coach.id,
+                              userId: coach.user.id,
+                              name: coach.user.name ?? null,
+                              email: coach.user.email ?? null,
+                            })
+                          }
+                        >
+                          <Eye className="mr-2 h-4 w-4" />
+                          View/Edit profile
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          disabled={submittingStatusId === coach.id}
+                          onSelect={() => onToggleStatus(coach)}
+                        >
+                          <Power className="mr-2 h-4 w-4" />
+                          {coach.status === "DISABLED" ? "Enable coach" : "Disable coach"}
+                        </DropdownMenuItem>
                         <DropdownMenuItem
                           className="text-destructive focus:text-destructive"
                           onSelect={() => setRemoveDialogId(coach.id)}
@@ -200,7 +267,8 @@ export function CoachesTab({
           <TableHeader className="bg-muted/20">
             <TableRow className="hover:bg-transparent">
               <TableHead className="text-xs">User</TableHead>
-              <TableHead className="w-[220px] text-center text-xs">Role</TableHead>
+              <TableHead className="w-[180px] text-center text-xs">Role</TableHead>
+              <TableHead className="w-[160px] text-center text-xs">Status</TableHead>
               <TableHead className="w-[160px] text-right text-xs">Created</TableHead>
               <TableHead className="w-[72px] pr-4 text-right text-xs">Actions</TableHead>
             </TableRow>
@@ -209,13 +277,13 @@ export function CoachesTab({
           <TableBody>
             {loading ? (
               <TableRow className="hover:bg-transparent">
-                <TableCell colSpan={4} className="py-10">
+                <TableCell colSpan={5} className="py-10">
                   {loadingState}
                 </TableCell>
               </TableRow>
             ) : rows.length === 0 ? (
               <TableRow className="hover:bg-transparent">
-                <TableCell colSpan={4} className="py-10">
+                <TableCell colSpan={5} className="py-10">
                   {emptyState}
                 </TableCell>
               </TableRow>
@@ -239,6 +307,12 @@ export function CoachesTab({
                     </Badge>
                   </TableCell>
 
+                  <TableCell className="py-5 text-center">
+                    <Badge className={`rounded-full border ${getStatusBadgeClass(coach.status)}`}>
+                      {statusLabel(coach.status)}
+                    </Badge>
+                  </TableCell>
+
                   <TableCell className="py-5 text-right tabular-nums text-foreground/80">
                     {fmtDate(coach.createdAt)}
                   </TableCell>
@@ -252,6 +326,26 @@ export function CoachesTab({
                       </DropdownMenuTrigger>
 
                       <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onSelect={() =>
+                            setProfileDialog({
+                              memberId: coach.id,
+                              userId: coach.user.id,
+                              name: coach.user.name ?? null,
+                              email: coach.user.email ?? null,
+                            })
+                          }
+                        >
+                          <Eye className="mr-2 h-4 w-4" />
+                          View/Edit profile
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          disabled={submittingStatusId === coach.id}
+                          onSelect={() => onToggleStatus(coach)}
+                        >
+                          <Power className="mr-2 h-4 w-4" />
+                          {coach.status === "DISABLED" ? "Enable coach" : "Disable coach"}
+                        </DropdownMenuItem>
                         <DropdownMenuItem
                           className="text-destructive focus:text-destructive"
                           onSelect={() => setRemoveDialogId(coach.id)}
@@ -284,6 +378,14 @@ export function CoachesTab({
             setRemoveDialogId(null)
           }
         }}
+      />
+
+      <CoachProfileDialog
+        orgId={orgId}
+        open={!!profileDialog}
+        data={profileDialog}
+        onOpenChange={(open) => (!open ? setProfileDialog(null) : null)}
+        onSaved={onRefresh}
       />
     </div>
   )

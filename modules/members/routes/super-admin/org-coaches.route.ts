@@ -9,6 +9,7 @@ type CoachDto = {
   id: string
   role: string
   createdAt: Date
+  status: "ACTIVE" | "DISABLED"
   user: { id: string; name: string | null; email: string | null }
 }
 
@@ -16,12 +17,14 @@ function toCoachDto(member: {
   id: string
   role: string
   createdAt: Date
+  status: "ACTIVE" | "DISABLED"
   user: { id: string; name: string | null; email: string | null }
 }): CoachDto {
   return {
     id: member.id,
     role: member.role,
     createdAt: member.createdAt,
+    status: member.status,
     user: {
       id: member.user.id,
       name: member.user.name ?? null,
@@ -45,7 +48,21 @@ export async function GET(req: Request, ctx: { params: Promise<{ orgId: string }
       orderBy: { createdAt: "desc" },
     })
 
-    return ok(rows.map(toCoachDto))
+    const profiles = await prisma.coachProfile.findMany({
+      where: { orgId, userId: { in: rows.map((row) => row.userId) } },
+      select: { userId: true, status: true },
+    })
+
+    const statusByUserId = new Map(profiles.map((profile) => [profile.userId, profile.status]))
+
+    return ok(
+      rows.map((row) =>
+        toCoachDto({
+          ...row,
+          status: statusByUserId.get(row.userId) ?? "ACTIVE",
+        })
+      )
+    )
   } catch (e: any) {
     return fail(e)
   }

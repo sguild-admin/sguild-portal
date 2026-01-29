@@ -2,8 +2,10 @@ import { prisma } from "@/lib/db/prisma"
 import type { CoachStatus } from "@prisma/client"
 
 export type CoachProfileUpsert = Partial<{
+  nickname: string | null
   bio: string | null
   notes: string | null
+  address: string | null
   zip: string | null
   phone: string | null
 }>

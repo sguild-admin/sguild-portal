@@ -4,8 +4,10 @@ import { requireActiveOrgId, requireAdminOrOwner, requireSession } from "@/lib/a
 import { coachProfilesRepo } from "./coach-profiles.repo"
 
 type UpsertCoachProfileInput = Partial<{
+  nickname: string | null
   bio: string | null
   notes: string | null
+  address: string | null
   zip: string | null
   phone: string | null
 }>
