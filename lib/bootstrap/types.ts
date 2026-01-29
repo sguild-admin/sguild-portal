@@ -9,6 +9,11 @@ export type BootstrapPayload = {
   } | null
   activeOrg: any | null
   roles: string[]
+  activeOrgMember: { role: string; status: "ACTIVE" | "DISABLED" } | null
+  activeCoach: { status: "ACTIVE" | "DISABLED" } | null
+  canAccessOrg: boolean
+  isAdmin: boolean
+  isCoach: boolean
   superAdmin: boolean
   orgSettings: any | null
 }

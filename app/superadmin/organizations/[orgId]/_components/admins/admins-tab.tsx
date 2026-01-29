@@ -28,7 +28,8 @@ import { rolePillClass } from "@/app/superadmin/organizations/_components/role-p
 
 export type AdminItem = {
   id: string
-  role: "owner" | "admin" | "coach" | "member"
+  role: "owner" | "admin"
+  status?: "ACTIVE" | "DISABLED"
   createdAt: string | Date
   user: { id: string; name: string | null; email: string | null }
 }
@@ -37,8 +38,8 @@ type ApiOk<T> = { ok: true; data: T }
 type ApiFail = { ok: false; error: string }
 type ApiResponse<T> = ApiOk<T> | ApiFail
 
-async function apiUpdateRole(orgId: string, memberId: string, role: AdminItem["role"]) {
-  const res = await fetch(`/api/super-admin/orgs/${orgId}/admins/${memberId}`, {
+async function apiUpdateRole(orgId: string, userId: string, role: AdminItem["role"]) {
+  const res = await fetch(`/api/super-admin/orgs/${orgId}/members/${userId}/role`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ role }),
@@ -130,7 +131,7 @@ export function AdminsTab({
     if (!roleDialog) return
     setSubmittingRole(true)
     try {
-      await apiUpdateRole(orgId, roleDialog.memberId, role)
+      await apiUpdateRole(orgId, roleDialog.userId, role)
       await onRefresh()
       setRoleDialog(null)
       toast.success("Role updated")
@@ -210,6 +211,7 @@ export function AdminsTab({
                           onClick={() =>
                             setRoleDialog({
                               memberId: admin.id,
+                              userId: admin.user.id,
                               name: admin.user.name ?? admin.user.email ?? "User",
                               role: admin.role,
                             })

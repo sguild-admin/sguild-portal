@@ -20,8 +20,9 @@ import {
 
 export type RoleDialogData = {
   memberId: string
+  userId: string
   name: string
-  role: "owner" | "admin" | "coach" | "member"
+  role: "owner" | "admin"
 }
 
 export function RoleDialog({
@@ -43,8 +44,6 @@ export function RoleDialog({
   const roleDescriptions: Record<RoleDialogData["role"], string> = {
     owner: "Full access including billing and org settings",
     admin: "Manage staff, schedules, clients",
-    coach: "Coach tools only",
-    member: "Basic access to assigned content",
   }
 
   useEffect(() => {

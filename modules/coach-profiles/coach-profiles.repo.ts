@@ -18,6 +18,12 @@ export const coachProfilesRepo = {
     })
   },
 
+  getByOrgUser(orgId: string, userId: string) {
+    return prisma.coachProfile.findUnique({
+      where: { orgId_userId: { orgId, userId } },
+    })
+  },
+
   getByUserAndOrg(userId: string, orgId: string) {
     return prisma.coachProfile.findUnique({
       where: { orgId_userId: { orgId, userId } },
@@ -27,6 +33,22 @@ export const coachProfilesRepo = {
   listByOrg(orgId: string) {
     return prisma.coachProfile.findMany({
       where: { orgId },
+      include: { user: true },
+      orderBy: { createdAt: "desc" },
+    })
+  },
+
+  listActiveByOrg(orgId: string) {
+    return prisma.coachProfile.findMany({
+      where: { orgId, status: "ACTIVE" },
+      include: { user: true },
+      orderBy: { createdAt: "desc" },
+    })
+  },
+
+  listDisabledByOrg(orgId: string) {
+    return prisma.coachProfile.findMany({
+      where: { orgId, status: "DISABLED" },
       include: { user: true },
       orderBy: { createdAt: "desc" },
     })
@@ -53,6 +75,18 @@ export const coachProfilesRepo = {
         ...data,
       },
       update: data,
+    })
+  },
+
+  upsertStatus(orgId: string, userId: string, status: CoachStatus) {
+    return prisma.coachProfile.upsert({
+      where: { orgId_userId: { orgId, userId } },
+      create: {
+        orgId,
+        userId,
+        status,
+      },
+      update: { status },
     })
   },
 

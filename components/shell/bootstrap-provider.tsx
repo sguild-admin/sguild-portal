@@ -12,6 +12,11 @@ export type BootstrapData = {
   } | null
   activeOrg: any | null
   roles: string[]
+  activeOrgMember: { role: string; status: "ACTIVE" | "DISABLED" } | null
+  activeCoach: { status: "ACTIVE" | "DISABLED" } | null
+  canAccessOrg: boolean
+  isAdmin: boolean
+  isCoach: boolean
   orgSettings: any | null
   superAdmin: boolean
 }

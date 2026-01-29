@@ -26,7 +26,7 @@ import { rolePillClass } from "@/app/superadmin/organizations/_components/role-p
 
 export type CoachItem = {
   id: string
-  role: "coach" | "member"
+  role: "owner" | "admin" | "member"
   createdAt: string | Date
   status: "ACTIVE" | "DISABLED"
   user: { id: string; name: string | null; email: string | null }
@@ -48,10 +48,10 @@ async function apiRemoveCoach(orgId: string, memberId: string) {
 
 async function apiUpdateCoachStatus(
   orgId: string,
-  memberId: string,
+  userId: string,
   status: CoachItem["status"]
 ) {
-  const res = await fetch(`/api/super-admin/orgs/${orgId}/coaches/${memberId}/profile`, {
+  const res = await fetch(`/api/super-admin/orgs/${orgId}/coaches/${userId}/status`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ status }),
@@ -75,7 +75,7 @@ function titleCaseRole(role: CoachItem["role"]) {
 
 function getRolePillClass(role: CoachItem["role"]) {
   const key = role.toUpperCase() as keyof typeof rolePillClass
-  return rolePillClass[key] ?? rolePillClass.COACH
+  return rolePillClass[key] ?? rolePillClass.MEMBER
 }
 
 function getStatusBadgeClass(status: CoachItem["status"]) {
@@ -162,7 +162,7 @@ export function CoachesTab({
     setSubmittingStatusId(coach.id)
     try {
       const nextStatus = coach.status === "DISABLED" ? "ACTIVE" : "DISABLED"
-      await apiUpdateCoachStatus(orgId, coach.id, nextStatus)
+      await apiUpdateCoachStatus(orgId, coach.user.id, nextStatus)
       await onRefresh()
       toast.success(`Coach ${nextStatus === "DISABLED" ? "disabled" : "enabled"}`)
     } catch (e) {

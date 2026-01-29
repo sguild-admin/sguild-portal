@@ -59,7 +59,6 @@ export async function GET(req: Request, ctx: { params: Promise<{ orgId: string }
       rows.map((row) =>
         toCoachDto({
           ...row,
-          role: "coach",
           status: statusByUserId.get(row.userId) ?? "ACTIVE",
         })
       )

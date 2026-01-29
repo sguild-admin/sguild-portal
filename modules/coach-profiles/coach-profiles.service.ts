@@ -1,6 +1,7 @@
 // modules/coach-profiles/coach-profiles.service.ts
-import { auth } from "@/lib/auth/auth"
-import { requireActiveOrgId, requireAdminOrOwner, requireSession } from "@/lib/auth/guards"
+import { AppError } from "@/lib/http/errors"
+import { requireActiveOrgId, requireAdminOrOwner, requireSession, requireSuperAdmin } from "@/lib/auth/guards"
+import { membersRepo } from "@/modules/members/members.repo"
 import { coachProfilesRepo } from "./coach-profiles.repo"
 
 type UpsertCoachProfileInput = Partial<{
@@ -24,13 +25,13 @@ export const coachProfilesService = {
   async getMine(headers: Headers) {
     const session = await requireSession(headers)
     const orgId = await requireActiveOrgId(headers)
-    return coachProfilesRepo.getByUserAndOrg(orgId, session.userId)
+    return coachProfilesRepo.getByOrgUser(orgId, session.userId)
   },
 
   async getByUserId(headers: Headers, userId: string) {
     await requireAdminOrOwner(headers)
     const orgId = await requireActiveOrgId(headers)
-    return coachProfilesRepo.getByUserAndOrg(orgId, userId)
+    return coachProfilesRepo.getByOrgUser(orgId, userId)
   },
 
   async upsertMine(headers: Headers, input: UpsertCoachProfileInput) {
@@ -43,5 +44,35 @@ export const coachProfilesService = {
     await requireAdminOrOwner(headers)
     const orgId = await requireActiveOrgId(headers)
     return coachProfilesRepo.setStatus(orgId, input.userId, input.status as any)
+  },
+
+  async enableCoach(headers: Headers, input: { orgId: string; userId: string }) {
+    try {
+      await requireSuperAdmin(headers)
+    } catch {
+      await requireAdminOrOwner(headers)
+    }
+
+    const member = await membersRepo.getByOrgUser(input.orgId, input.userId)
+    if (!member) throw new AppError("NOT_FOUND", "Member not found")
+
+    return coachProfilesRepo.upsertStatus(input.orgId, input.userId, "ACTIVE")
+  },
+
+  async disableCoach(headers: Headers, input: { orgId: string; userId: string }) {
+    try {
+      await requireSuperAdmin(headers)
+    } catch {
+      await requireAdminOrOwner(headers)
+    }
+
+    const profile = await coachProfilesRepo.upsertStatus(input.orgId, input.userId, "DISABLED")
+
+    const member = await membersRepo.getByOrgUser(input.orgId, input.userId)
+    if (member && member.role === "member" && member.status === "ACTIVE") {
+      await membersRepo.setStatus(input.orgId, input.userId, "DISABLED")
+    }
+
+    return profile
   },
 }

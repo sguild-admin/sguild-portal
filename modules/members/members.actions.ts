@@ -31,7 +31,7 @@ export async function listMembersAction(input?: unknown) {
 
   const filtered = members.filter((m) => {
     const roleOk = q.role ? String(m.role) === q.role : true
-    const statusOk = q.status ? String(m.status ?? "active") === q.status : true
+    const statusOk = q.status ? String(m.status ?? "ACTIVE") === q.status : true
     return roleOk && statusOk
   })
 

@@ -12,7 +12,8 @@ import type {
   ResendInviteInput,
   RevokeInviteInput,
 } from "./invitations.schema"
-import { membersRepo, type MemberRole } from "@/modules/members/members.repo"
+import { coachProfilesRepo } from "@/modules/coach-profiles/coach-profiles.repo"
+import { membersRepo } from "@/modules/members/members.repo"
 
 type AuthResult =
   | { session: { userId: string }; user?: { email?: string | null } }
@@ -84,7 +85,7 @@ function buildInviteUrl(token: string) {
   return `${appBaseUrl()}/invite?token=${encodeURIComponent(token)}`
 }
 
-function normalizeMemberRole(role: string): MemberRole {
+function normalizeInviteRole(role: string) {
   if (role === "owner" || role === "admin" || role === "coach" || role === "member") return role
   throw new AppError("BAD_REQUEST", "Invalid invite role")
 }
@@ -212,9 +213,19 @@ export const invitationsService = {
       throw new AppError("FORBIDDEN", "Signed-in email does not match invite")
     }
 
-    const role = normalizeMemberRole(inv.role)
+    const role = normalizeInviteRole(inv.role)
 
-    await membersRepo.upsertByUserAndOrg(userId, inv.organizationId, role)
+    if (role === "admin") {
+      await membersRepo.upsertByUserAndOrg(userId, inv.organizationId, "admin")
+    } else if (role === "owner") {
+      await membersRepo.upsertByUserAndOrg(userId, inv.organizationId, "owner")
+    } else {
+      await membersRepo.upsertByUserAndOrg(userId, inv.organizationId, "member")
+    }
+
+    if (role === "coach") {
+      await coachProfilesRepo.upsertStatus(inv.organizationId, userId, "ACTIVE")
+    }
 
     const updated = await invitationsRepo.markAccepted({ inviteId: inv.id, acceptedAt: now })
     return toInvitationDto(updated)

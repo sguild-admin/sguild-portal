@@ -3,6 +3,8 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth/auth"
 import { prisma } from "@/lib/db/prisma"
 import { orgSettingsRepo } from "@/modules/org-settings/org-settings.repo"
+import { coachProfilesRepo } from "@/modules/coach-profiles/coach-profiles.repo"
+import { membersRepo } from "@/modules/members/members.repo"
 import { fail, ok, toHttpStatus } from "@/lib/http/response"
 
 function normalizeRoles(role: unknown): string[] {
@@ -35,6 +37,11 @@ export async function GET(req: Request) {
           session: null,
           activeOrg: null,
           roles: [],
+          activeOrgMember: null,
+          activeCoach: null,
+          canAccessOrg: false,
+          isAdmin: false,
+          isCoach: false,
           superAdmin: false,
           orgSettings: null,
         })
@@ -77,6 +84,19 @@ export async function GET(req: Request) {
       }
     }
 
+    const activeOrgMember = activeOrgId
+      ? await membersRepo.getByOrgUser(activeOrgId, session.user.id)
+      : null
+    const activeCoach = activeOrgId
+      ? await coachProfilesRepo.getByOrgUser(activeOrgId, session.user.id)
+      : null
+
+    const canAccessOrg = !!activeOrgMember && activeOrgMember.status === "ACTIVE"
+    const isAdmin =
+      canAccessOrg &&
+      (activeOrgMember?.role === "admin" || activeOrgMember?.role === "owner")
+    const isCoach = canAccessOrg && activeCoach?.status === "ACTIVE"
+
     return NextResponse.json(
       ok({
         signedIn: true,
@@ -88,6 +108,13 @@ export async function GET(req: Request) {
         },
         activeOrg,
         roles,
+        activeOrgMember: activeOrgMember
+          ? { role: activeOrgMember.role, status: activeOrgMember.status }
+          : null,
+        activeCoach: activeCoach ? { status: activeCoach.status } : null,
+        canAccessOrg,
+        isAdmin,
+        isCoach,
         superAdmin,
         orgSettings,
       })
