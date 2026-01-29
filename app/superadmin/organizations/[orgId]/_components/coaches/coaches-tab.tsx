@@ -23,6 +23,7 @@ import {
 import { ConfirmDeleteDialog } from "@/app/superadmin/_components/confirm-delete-dialog"
 import { MoreHorizontal, Trash2, Users } from "lucide-react"
 import { CoachRoleDialog, type CoachRoleDialogData } from "./coach-role-dialog"
+import { rolePillClass } from "@/app/superadmin/organizations/_components/role-pill"
 
 export type CoachItem = {
   id: string
@@ -68,16 +69,33 @@ function titleCaseRole(role: CoachItem["role"]) {
   return role.charAt(0).toUpperCase() + role.slice(1)
 }
 
+function getRolePillClass(role: CoachItem["role"]) {
+  const key = role.toUpperCase() as keyof typeof rolePillClass
+  return rolePillClass[key] ?? rolePillClass.COACH
+}
+
+function getOwnerGuardMessage(error: unknown) {
+  if (error instanceof Error) {
+    if (error.message.toLowerCase().includes("owner")) {
+      return "Organization must have an owner"
+    }
+    return error.message
+  }
+  return "Something went wrong"
+}
+
 export function CoachesTab({
   orgId,
   coaches,
   loading,
   onRefresh,
+  onInviteRequested,
 }: {
   orgId: string
   coaches: CoachItem[]
   loading: boolean
   onRefresh: () => Promise<void>
+  onInviteRequested: (email: string) => void
 }) {
   const [roleDialog, setRoleDialog] = useState<CoachRoleDialogData | null>(null)
   const [submittingRole, setSubmittingRole] = useState(false)
@@ -117,7 +135,7 @@ export function CoachesTab({
       setRoleDialog(null)
       toast.success("Role updated")
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to update role")
+      toast.error(getOwnerGuardMessage(e))
     } finally {
       setSubmittingRole(false)
     }
@@ -130,7 +148,7 @@ export function CoachesTab({
       await onRefresh()
       toast.success("Coach removed")
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to remove coach")
+      toast.error(getOwnerGuardMessage(e))
     } finally {
       setSubmittingRemoveId(null)
     }
@@ -146,9 +164,12 @@ export function CoachesTab({
               {rows.length}
             </Badge>
           </div>
+          <Button variant="outline" onClick={() => onInviteRequested("")} type="button">
+            Add coach
+          </Button>
         </div>
 
-        <div className="md:hidden">
+        <div className="lg:hidden">
           {loading ? (
             <div className="px-6 py-10">{loadingState}</div>
           ) : rows.length === 0 ? (
@@ -165,7 +186,7 @@ export function CoachesTab({
                       <div className="text-xs text-muted-foreground">
                         {coach.user.email ?? "—"}
                       </div>
-                      <Badge variant="secondary" className="mt-2 w-fit rounded-full text-foreground/80">
+                      <Badge className={`mt-2 w-fit rounded-full border ${getRolePillClass(coach.role)}`}>
                         {titleCaseRole(coach.role)}
                       </Badge>
                     </div>
@@ -220,7 +241,7 @@ export function CoachesTab({
           )}
         </div>
 
-        <Table className="hidden min-w-[900px] md:table">
+        <Table className="hidden min-w-[900px] lg:table">
           <TableHeader className="bg-muted/20">
             <TableRow className="hover:bg-transparent">
               <TableHead className="text-xs">User</TableHead>
@@ -258,7 +279,7 @@ export function CoachesTab({
                   </TableCell>
 
                   <TableCell className="py-5 text-center">
-                    <Badge variant="secondary" className="rounded-full text-foreground/80">
+                    <Badge className={`rounded-full border ${getRolePillClass(coach.role)}`}>
                       {titleCaseRole(coach.role)}
                     </Badge>
                   </TableCell>

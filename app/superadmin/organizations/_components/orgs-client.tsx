@@ -145,6 +145,9 @@ export function OrgsClient({ initialOrgs }: { initialOrgs: OrgRow[] }) {
         orgs={orgs}
         counts={counts}
         onRowClick={(org) => router.push(`/superadmin/organizations/${encodeURIComponent(org.id)}`)}
+        onTabClick={(org, tab) =>
+          router.push(`/superadmin/organizations/${encodeURIComponent(org.id)}?tab=${tab}`)
+        }
         onEdit={(org) => setEditOrg(org)}
         onDelete={async (org) => {
           setDeletingId(org.id)

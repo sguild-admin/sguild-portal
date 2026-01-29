@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useId, useState } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -11,6 +11,13 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 export type AdminRole = "admin" | "owner"
 
@@ -52,6 +59,15 @@ export function CreateAdminDialog({
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [notFound, setNotFound] = useState(false)
+  const roleDescriptionId = useId()
+
+  const trimmedEmail = email.trim().toLowerCase()
+  const isValidEmail = Boolean(trimmedEmail.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/))
+
+  const roleDescriptions: Record<AdminRole, string> = {
+    owner: "Full access including billing and org settings",
+    admin: "Manage staff, schedules, clients",
+  }
 
   useEffect(() => {
     if (!open) {
@@ -64,9 +80,12 @@ export function CreateAdminDialog({
   }, [open])
 
   async function onSubmit() {
-    const trimmed = email.trim().toLowerCase()
-    if (!trimmed) {
+    if (!trimmedEmail) {
       setError("Email is required")
+      return
+    }
+    if (!isValidEmail) {
+      setError("Enter a valid email address")
       return
     }
 
@@ -75,7 +94,7 @@ export function CreateAdminDialog({
     setNotFound(false)
 
     try {
-      await apiCreateAdmin(orgId, { email: trimmed, role })
+      await apiCreateAdmin(orgId, { email: trimmedEmail, role })
       onCreated()
       onOpenChange(false)
     } catch (e) {
@@ -93,49 +112,77 @@ export function CreateAdminDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-white text-slate-900 shadow-xl sm:max-w-md">
-        <DialogHeader>
+      <DialogContent className="max-w-md p-6">
+        <DialogHeader className="flex flex-row items-center justify-between space-y-0">
           <DialogTitle>Create admin</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-3">
-          <div className="space-y-2">
-            <Label htmlFor="admin-email">Email</Label>
+        <div className="grid gap-5">
+          <div className="grid gap-2">
+            <Label htmlFor="admin-email" className="text-sm font-medium">
+              Email <span className="text-destructive">*</span>
+            </Label>
             <Input
               id="admin-email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="admin@example.com"
+              onChange={(e) => {
+                setEmail(e.target.value)
+                if (error) setError(null)
+              }}
+              placeholder="name@domain.com"
               autoComplete="email"
               disabled={submitting}
+              className="h-10 border-border/60 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/30"
             />
+            {error ? <div className="text-xs text-destructive">{error}</div> : null}
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="admin-role">Role</Label>
-            <select
-              id="admin-role"
-              className="h-10 w-full rounded-md border px-3 text-sm"
-              value={role}
-              onChange={(e) => setRole(e.target.value as AdminRole)}
-              disabled={submitting}
-            >
-              <option value="admin">Admin</option>
-              <option value="owner">Owner</option>
-            </select>
+
+          <div className="grid gap-2">
+            <Label htmlFor="admin-role" className="text-sm font-medium">
+              Role <span className="text-destructive">*</span>
+            </Label>
+            <Select value={role} onValueChange={(value) => setRole(value as AdminRole)}>
+              <SelectTrigger
+                id="admin-role"
+                className="h-10 border-border/60 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/30"
+                disabled={submitting}
+                aria-describedby={roleDescriptionId}
+              >
+                <SelectValue placeholder="Select a role" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem
+                  value="owner"
+                  text="Owner"
+                  description="Full access including billing and org settings"
+                />
+                <SelectItem
+                  value="admin"
+                  text="Admin"
+                  description="Manage staff, schedules, clients"
+                />
+              </SelectContent>
+            </Select>
+            <p id={roleDescriptionId} className="pl-1 text-xs text-muted-foreground">
+              {roleDescriptions[role]}
+            </p>
           </div>
-          {error ? <div className="text-sm text-destructive">{error}</div> : null}
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} type="button" disabled={submitting}>
+        <DialogFooter className="mt-2 flex justify-end gap-2">
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            type="button"
+            disabled={submitting}
+          >
             Cancel
           </Button>
           {notFound ? (
             <Button
               onClick={() => {
-                const trimmed = email.trim().toLowerCase()
                 onOpenChange(false)
-                onInviteInstead(trimmed)
+                onInviteInstead(trimmedEmail)
               }}
               type="button"
               disabled={submitting}
@@ -143,7 +190,7 @@ export function CreateAdminDialog({
               Create invite instead
             </Button>
           ) : (
-            <Button onClick={onSubmit} type="button" disabled={submitting}>
+            <Button onClick={onSubmit} type="button" disabled={submitting || !isValidEmail}>
               {submitting ? "Creating..." : "Create admin"}
             </Button>
           )}

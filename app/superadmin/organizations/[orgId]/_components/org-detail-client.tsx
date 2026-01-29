@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -12,6 +12,8 @@ import { OrgDialogs } from "@/app/superadmin/organizations/_components/orgs-dial
 import { AdminsTab, type AdminItem } from "@/app/superadmin/organizations/[orgId]/_components/admins/admins-tab"
 import { CoachesTab, type CoachItem } from "@/app/superadmin/organizations/[orgId]/_components/coaches/coaches-tab"
 import { InvitationsTab, type InviteItem } from "@/app/superadmin/organizations/[orgId]/_components/invites/invitations-tab"
+import { InviteDialog } from "@/app/superadmin/organizations/[orgId]/_components/invites/invite-dialog"
+import { InviteLinkDialog } from "@/app/superadmin/organizations/[orgId]/_components/invites/invite-link-dialog"
 import { Trash2 } from "lucide-react"
 import { PageScaffold } from "@/components/shell/page-scaffold"
 
@@ -70,7 +72,15 @@ async function apiGetCoaches(orgId: string): Promise<CoachItem[]> {
 
 export function OrgDetailClient({ org }: { org: OrgDto }) {
   const router = useRouter()
-  const [tab, setTab] = useState<TabKey>("admins")
+  const searchParams = useSearchParams()
+
+  const tabFromUrl = useMemo(() => {
+    const value = searchParams.get("tab")
+    if (value === "admins" || value === "coaches" || value === "invitations") return value
+    return null
+  }, [searchParams])
+
+  const [tab, setTab] = useState<TabKey>(tabFromUrl ?? "admins")
 
   const [admins, setAdmins] = useState<AdminItem[]>([])
   const [coaches, setCoaches] = useState<CoachItem[]>([])
@@ -84,6 +94,7 @@ export function OrgDetailClient({ org }: { org: OrgDto }) {
 
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false)
   const [invitePrefill, setInvitePrefill] = useState<InvitePrefill | null>(null)
+  const [inviteUrl, setInviteUrl] = useState<string | null>(null)
 
   const refreshAdmins = useCallback(async () => {
     setLoadingAdmins(true)
@@ -122,10 +133,11 @@ export function OrgDetailClient({ org }: { org: OrgDto }) {
   }, [org.id])
 
   useEffect(() => {
+    if (tabFromUrl && tabFromUrl !== tab) setTab(tabFromUrl)
     refreshAdmins()
     refreshCoaches()
     refreshInvites()
-  }, [refreshAdmins, refreshCoaches, refreshInvites])
+  }, [refreshAdmins, refreshCoaches, refreshInvites, tabFromUrl, tab])
 
   const pendingInvites = useMemo(
     () => invites.filter((inv) => inv.status === "PENDING").length,
@@ -150,8 +162,20 @@ export function OrgDetailClient({ org }: { org: OrgDto }) {
       title={org.name}
       titleClassName="text-3xl font-semibold leading-tight"
       subtitle={
-        <div className="mt-1 inline-flex items-center rounded-md border border-border/60 bg-muted/20 px-2 py-0.5 font-mono text-xs text-foreground/70">
-          {org.slug ?? "—"}
+        <div className="mt-1 flex flex-wrap items-center gap-2">
+          <div className="inline-flex items-center rounded-md border border-border/60 bg-muted/20 px-2 py-0.5 font-mono text-xs text-foreground/70">
+            {org.slug ?? "—"}
+          </div>
+          {org.settings?.timeZone ? (
+            <div className="inline-flex items-center rounded-md border border-border/60 bg-muted/20 px-2 py-0.5 text-xs text-foreground/70">
+              {org.settings.timeZone}
+            </div>
+          ) : null}
+          {org.settings?.offersOceanLessons ? (
+            <div className="inline-flex items-center rounded-md border border-border/60 bg-muted/20 px-2 py-0.5 text-xs text-foreground/70">
+              Ocean lessons
+            </div>
+          ) : null}
         </div>
       }
       breadcrumb={
@@ -166,7 +190,7 @@ export function OrgDetailClient({ org }: { org: OrgDto }) {
       actions={
         <div className="flex items-center gap-2 pt-1">
           <Button variant="outline" onClick={() => setEditOrg(org)}>
-            Edit org
+            Settings
           </Button>
 
           <ConfirmDeleteDialog
@@ -220,11 +244,6 @@ export function OrgDetailClient({ org }: { org: OrgDto }) {
             admins={admins}
             loading={loadingAdmins}
             onRefresh={refreshAdmins}
-            onInviteRequested={(email: string) => {
-              setTab("invitations")
-              setInvitePrefill({ email, role: "admin" })
-              setInviteDialogOpen(true)
-            }}
           />
         </TabsContent>
 
@@ -234,6 +253,10 @@ export function OrgDetailClient({ org }: { org: OrgDto }) {
             coaches={coaches}
             loading={loadingCoaches}
             onRefresh={refreshCoaches}
+            onInviteRequested={(email: string) => {
+              setInvitePrefill({ email, role: "coach" })
+              setInviteDialogOpen(true)
+            }}
           />
         </TabsContent>
 
@@ -244,8 +267,7 @@ export function OrgDetailClient({ org }: { org: OrgDto }) {
             invites={invites}
             loading={loadingInvites}
             onRefresh={refreshInvites}
-            inviteDialogOpen={inviteDialogOpen}
-            invitePrefill={invitePrefill}
+            onInviteUrl={setInviteUrl}
             onInviteDialogOpenChange={(open) => {
               if (!open) setInvitePrefill(null)
               setInviteDialogOpen(open)
@@ -254,6 +276,29 @@ export function OrgDetailClient({ org }: { org: OrgDto }) {
           />
         </TabsContent>
       </Tabs>
+
+      <InviteDialog
+        orgId={org.id}
+        open={inviteDialogOpen}
+        prefill={invitePrefill}
+        onOpenChange={(open) => {
+          if (!open) setInvitePrefill(null)
+          setInviteDialogOpen(open)
+        }}
+        onCreated={(created) => {
+          setInviteUrl(created.inviteUrl)
+          setInvitePrefill(null)
+          refreshInvites()
+        }}
+      />
+
+      <InviteLinkDialog
+        open={!!inviteUrl}
+        inviteUrl={inviteUrl ?? ""}
+        onOpenChange={(v) => {
+          if (!v) setInviteUrl(null)
+        }}
+      />
 
       <OrgDialogs
         editOrg={editOrg}

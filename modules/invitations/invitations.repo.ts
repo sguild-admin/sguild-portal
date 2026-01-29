@@ -19,6 +19,37 @@ export const invitationsRepo = {
     })
   },
 
+  findPendingByOrgEmailRole: async (args: { orgId: string; email: string; role: string }) => {
+    return prisma.invitation.findFirst({
+      where: {
+        organizationId: args.orgId,
+        email: args.email.toLowerCase(),
+        role: args.role,
+        acceptedAt: null,
+        revokedAt: null,
+      },
+      orderBy: { createdAt: "desc" },
+    })
+  },
+
+  revokePendingByOrgEmailRoleNot: async (args: {
+    orgId: string
+    email: string
+    role: string
+    revokedAt: Date
+  }) => {
+    return prisma.invitation.updateMany({
+      where: {
+        organizationId: args.orgId,
+        email: args.email.toLowerCase(),
+        role: { not: args.role },
+        acceptedAt: null,
+        revokedAt: null,
+      },
+      data: { revokedAt: args.revokedAt },
+    })
+  },
+
   create: async (args: {
     orgId: string
     email: string

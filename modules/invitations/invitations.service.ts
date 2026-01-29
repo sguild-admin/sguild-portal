@@ -103,19 +103,43 @@ export const invitationsService = {
     const inviterId = getUserIdFromAuth(auth)
     const now = new Date()
 
-    const existing = await invitationsRepo.findActivePendingByOrgEmailRole({
+    const existingUser = await prisma.user.findUnique({
+      where: { email: input.email.toLowerCase() },
+      select: { id: true },
+    })
+
+    if (existingUser) {
+      const member = await prisma.member.findFirst({
+        where: { organizationId: input.orgId, userId: existingUser.id },
+        select: { role: true },
+      })
+
+      if (member?.role) {
+        throw new AppError("BAD_REQUEST", `Already has role: ${member.role}`)
+      }
+    }
+
+    const pendingSameRole = await invitationsRepo.findPendingByOrgEmailRole({
       orgId: input.orgId,
       email: input.email,
       role: input.role,
-      now,
     })
+
+    if (!pendingSameRole) {
+      await invitationsRepo.revokePendingByOrgEmailRoleNot({
+        orgId: input.orgId,
+        email: input.email,
+        role: input.role,
+        revokedAt: now,
+      })
+    }
 
     const raw = randomToken()
     const expiresAt = addDays(now, input.expiresInDays)
 
-    const invite = existing
+    const invite = pendingSameRole
       ? await invitationsRepo.updateTokenAndResend({
-          inviteId: existing.id,
+          inviteId: pendingSameRole.id,
           tokenHash: hashToken(raw),
           tokenLast4: last4(raw),
           expiresAt,
@@ -190,13 +214,7 @@ export const invitationsService = {
 
     const role = normalizeMemberRole(inv.role)
 
-    const existing = await membersRepo.getByUserAndOrg(userId, inv.organizationId)
-    if (!existing) {
-      // Requires you added membersRepo.create(userId, orgId, role)
-      await membersRepo.create(userId, inv.organizationId, role)
-    } else if (existing.role !== role) {
-      await membersRepo.updateRole(existing.id, role)
-    }
+    await membersRepo.upsertByUserAndOrg(userId, inv.organizationId, role)
 
     const updated = await invitationsRepo.markAccepted({ inviteId: inv.id, acceptedAt: now })
     return toInvitationDto(updated)

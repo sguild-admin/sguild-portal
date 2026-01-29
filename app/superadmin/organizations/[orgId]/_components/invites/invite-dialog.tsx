@@ -1,6 +1,7 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useId, useState } from "react"
+import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -11,8 +12,15 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
-export type InviteRole = "admin" | "owner"
+export type InviteRole = "admin" | "owner" | "coach"
 
 type ApiOk<T> = { ok: true; data: T }
 type ApiFail = { ok: false; error: string }
@@ -62,6 +70,16 @@ export function InviteDialog({
   const [role, setRole] = useState<InviteRole>("admin")
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const roleDescriptionId = useId()
+
+  const trimmedEmail = email.trim().toLowerCase()
+  const isValidEmail = Boolean(trimmedEmail.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/))
+
+  const roleDescriptions: Record<InviteRole, string> = {
+    owner: "Full access including billing and org settings",
+    admin: "Manage staff, schedules, clients",
+    coach: "Coach tools only",
+  }
 
   useEffect(() => {
     if (!open) {
@@ -72,14 +90,20 @@ export function InviteDialog({
       return
     }
     if (prefill?.email) setEmail(prefill.email)
-    const role = prefill?.role === "owner" || prefill?.role === "admin" ? prefill.role : "admin"
+    const role =
+      prefill?.role === "owner" || prefill?.role === "admin" || prefill?.role === "coach"
+        ? prefill.role
+        : "admin"
     setRole(role)
   }, [open, prefill])
 
   async function onSubmit() {
-    const trimmed = email.trim().toLowerCase()
-    if (!trimmed) {
+    if (!trimmedEmail) {
       setError("Email is required")
+      return
+    }
+    if (!isValidEmail) {
+      setError("Enter a valid email address")
       return
     }
 
@@ -87,14 +111,15 @@ export function InviteDialog({
     setError(null)
     try {
       const created = await apiCreateInvite(orgId, {
-        email: trimmed,
+        email: trimmedEmail,
         role,
         expiresInDays: 7,
       })
       onCreated(created)
       onOpenChange(false)
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to create invite")
+      const message = e instanceof Error ? e.message : "Failed to create invite"
+      toast.error(message)
     } finally {
       setSubmitting(false)
     }
@@ -102,46 +127,90 @@ export function InviteDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-white text-slate-900 shadow-xl sm:max-w-md">
-        <DialogHeader>
+      <DialogContent className="max-w-md p-6">
+        <DialogHeader className="flex flex-row items-center justify-between space-y-0">
           <DialogTitle>Create invite</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-3">
-          <div className="space-y-2">
-            <Label htmlFor="invite-email">Email</Label>
+        <div className="grid gap-5">
+          <div className="grid gap-2">
+            <Label htmlFor="invite-email" className="text-sm font-medium">
+              Email <span className="text-destructive">*</span>
+            </Label>
             <Input
               id="invite-email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="admin@example.com"
+              onChange={(e) => {
+                setEmail(e.target.value)
+                if (error) setError(null)
+              }}
+              placeholder="name@domain.com"
               autoComplete="email"
               disabled={submitting}
               readOnly={Boolean(prefill?.email)}
+              className="h-10 border-border/60 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/30"
             />
+            {error ? <div className="text-xs text-destructive">{error}</div> : null}
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="invite-role">Role</Label>
-            <select
-              id="invite-role"
-              className="h-10 w-full rounded-md border px-3 text-sm"
-              value={role}
-              onChange={(e) => setRole(e.target.value as InviteRole)}
-              disabled={submitting}
-            >
-              <option value="admin">Admin</option>
-              <option value="owner">Owner</option>
-            </select>
+
+          <div className="grid gap-2">
+            <Label htmlFor="invite-role" className="text-sm font-medium">
+              Role
+            </Label>
+            {role === "coach" ? (
+              <>
+                <Input
+                  id="invite-role"
+                  value="Coach"
+                  readOnly
+                  className="h-10 border-border/60 bg-muted/30 focus-visible:ring-0 focus-visible:ring-offset-0"
+                />
+                <p className="pl-1 text-xs text-muted-foreground">Coach tools only</p>
+              </>
+            ) : (
+              <>
+                <Select value={role} onValueChange={(value) => setRole(value as InviteRole)}>
+                  <SelectTrigger
+                    id="invite-role"
+                    className="h-10 border-border/60 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/30"
+                    disabled={submitting}
+                    aria-describedby={roleDescriptionId}
+                  >
+                    <SelectValue placeholder="Select a role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem
+                      value="owner"
+                      text="Owner"
+                      description="Full access including billing and org settings"
+                    />
+                    <SelectItem
+                      value="admin"
+                      text="Admin"
+                      description="Manage staff, schedules, clients"
+                    />
+                    <SelectItem value="coach" text="Coach" description="Coach tools only" />
+                  </SelectContent>
+                </Select>
+                <p id={roleDescriptionId} className="pl-1 text-xs text-muted-foreground">
+                  {roleDescriptions[role]}
+                </p>
+              </>
+            )}
           </div>
-          {error ? <div className="text-sm text-destructive">{error}</div> : null}
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} type="button" disabled={submitting}>
+        <DialogFooter className="mt-2 flex justify-end gap-2">
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            type="button"
+            disabled={submitting}
+          >
             Cancel
           </Button>
-          <Button onClick={onSubmit} type="button" disabled={submitting}>
-            {submitting ? "Creating..." : "Create invite"}
+          <Button onClick={onSubmit} type="button" disabled={submitting || !isValidEmail}>
+            {submitting ? "Sending..." : "Send invite"}
           </Button>
         </DialogFooter>
       </DialogContent>

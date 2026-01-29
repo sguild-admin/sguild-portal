@@ -38,6 +38,8 @@ type OrgCounts = {
   pendingInvites: number
 }
 
+type OrgTabTarget = "admins" | "coaches" | "invitations"
+
 function fmtDate(d: unknown) {
   if (!d) return "—"
   const date = typeof d === "string" || d instanceof Date ? new Date(d) : null
@@ -51,6 +53,7 @@ export function OrgsTable({
   onRowClick,
   onEdit,
   onDelete,
+  onTabClick,
   onCreate,
   deletingId,
 }: {
@@ -59,6 +62,7 @@ export function OrgsTable({
   onRowClick: (org: OrgRow) => void
   onEdit: (org: OrgRow) => void
   onDelete: (org: OrgRow) => void | Promise<void>
+  onTabClick?: (org: OrgRow, tab: OrgTabTarget) => void
   onCreate?: () => void
   deletingId?: string | null
 }) {
@@ -79,11 +83,8 @@ export function OrgsTable({
   )
 
   return (
-    <TableSurface
-      stickyHeader
-      className="rounded-none border-0 bg-transparent shadow-none md:rounded-lg md:border md:bg-card md:shadow-sm"
-    >
-      <div className="md:hidden">
+    <TableSurface stickyHeader className="rounded-none border-0 bg-transparent shadow-none">
+      <div className="lg:hidden">
         {orgs.length === 0 ? (
           <div className="px-6 py-10">{emptyState}</div>
         ) : (
@@ -127,7 +128,7 @@ export function OrgsTable({
                       </DropdownMenuTrigger>
 
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => onEdit(org)}>Edit</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => onEdit(org)}>Settings</DropdownMenuItem>
                         <DropdownMenuSeparator />
 
                         <ConfirmDeleteDialog
@@ -147,24 +148,45 @@ export function OrgsTable({
                   </div>
 
                   <div className="mt-3 grid grid-cols-2 gap-3 text-xs text-muted-foreground">
-                    <div className="rounded-md border border-border/60 px-2 py-2">
+                    <button
+                      type="button"
+                      className="cursor-pointer rounded-md border border-border/60 px-2 py-2 text-left"
+                      onClick={(event) => {
+                        event.stopPropagation()
+                        onTabClick?.(org, "coaches")
+                      }}
+                    >
                       <div className="text-[11px] uppercase tracking-wide">Coaches</div>
                       <div className="mt-1 text-sm font-semibold text-foreground">
                         {typeof org._count?.members === "number" ? org._count.members : "—"}
                       </div>
-                    </div>
-                    <div className="rounded-md border border-border/60 px-2 py-2">
+                    </button>
+                    <button
+                      type="button"
+                      className="cursor-pointer rounded-md border border-border/60 px-2 py-2 text-left"
+                      onClick={(event) => {
+                        event.stopPropagation()
+                        onTabClick?.(org, "admins")
+                      }}
+                    >
                       <div className="text-[11px] uppercase tracking-wide">Admins</div>
                       <div className="mt-1 text-sm font-semibold text-foreground">
                         {meta?.admins ?? "—"}
                       </div>
-                    </div>
-                    <div className="rounded-md border border-border/60 px-2 py-2">
+                    </button>
+                    <button
+                      type="button"
+                      className="cursor-pointer rounded-md border border-border/60 px-2 py-2 text-left"
+                      onClick={(event) => {
+                        event.stopPropagation()
+                        onTabClick?.(org, "invitations")
+                      }}
+                    >
                       <div className="text-[11px] uppercase tracking-wide">Pending invites</div>
                       <div className="mt-1 text-sm font-semibold text-foreground">
                         {meta?.pendingInvites ?? "—"}
                       </div>
-                    </div>
+                    </button>
                     <div className="rounded-md border border-border/60 px-2 py-2">
                       <div className="text-[11px] uppercase tracking-wide">Created</div>
                       <div className="mt-1 text-sm font-semibold text-foreground">
@@ -179,7 +201,7 @@ export function OrgsTable({
         )}
       </div>
 
-      <Table className="hidden w-full min-w-[760px] md:table">
+      <Table className="hidden w-full min-w-[760px] bg-card lg:table">
         <TableHeader>
           <TableRow className="hover:bg-transparent">
             <TableHead>Organization</TableHead>
@@ -222,15 +244,42 @@ export function OrgsTable({
                   </TableCell>
 
                   <TableCell className="text-sm tabular-nums text-foreground/80">
-                    {typeof org._count?.members === "number" ? org._count.members : "—"}
+                    <button
+                      type="button"
+                      className="w-full cursor-pointer text-left"
+                      onClick={(event) => {
+                        event.stopPropagation()
+                        onTabClick?.(org, "coaches")
+                      }}
+                    >
+                      {typeof org._count?.members === "number" ? org._count.members : "—"}
+                    </button>
                   </TableCell>
 
                   <TableCell className="text-sm tabular-nums text-foreground/80">
-                    {meta?.admins ?? "—"}
+                    <button
+                      type="button"
+                      className="w-full cursor-pointer text-left"
+                      onClick={(event) => {
+                        event.stopPropagation()
+                        onTabClick?.(org, "admins")
+                      }}
+                    >
+                      {meta?.admins ?? "—"}
+                    </button>
                   </TableCell>
 
                   <TableCell className="text-sm tabular-nums text-foreground/80">
-                    {meta?.pendingInvites ?? "—"}
+                    <button
+                      type="button"
+                      className="w-full cursor-pointer text-left"
+                      onClick={(event) => {
+                        event.stopPropagation()
+                        onTabClick?.(org, "invitations")
+                      }}
+                    >
+                      {meta?.pendingInvites ?? "—"}
+                    </button>
                   </TableCell>
 
                   <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
@@ -251,7 +300,7 @@ export function OrgsTable({
                       </DropdownMenuTrigger>
 
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => onEdit(org)}>Edit</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => onEdit(org)}>Settings</DropdownMenuItem>
                         <DropdownMenuSeparator />
 
                         <ConfirmDeleteDialog

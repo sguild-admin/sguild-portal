@@ -22,10 +22,19 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { TableSurface } from "@/components/common/table-surface"
-import { InviteDialog, type InviteCreated } from "./invite-dialog"
-import { InviteLinkDialog } from "./invite-link-dialog"
+import type { InviteCreated } from "./invite-dialog"
 import { Ban, MailPlus, MoreHorizontal } from "lucide-react"
-import { ConfirmDeleteDialog } from "@/app/superadmin/_components/confirm-delete-dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { rolePillClass } from "@/app/superadmin/organizations/_components/role-pill"
 
 export type InviteItem = {
   id: string
@@ -35,6 +44,8 @@ export type InviteItem = {
   createdAt: string
   expiresAt: string
   lastSentAt: string | null
+  acceptedAt?: string | null
+  revokedAt?: string | null
 }
 
 type ApiOk<T> = { ok: true; data: T }
@@ -76,14 +87,29 @@ function fmtDate(d: string | null) {
   return Number.isNaN(date.getTime()) ? "—" : dateFormatter.format(date)
 }
 
+function getCreatedAtTime(value: string) {
+  const time = new Date(value).getTime()
+  return Number.isNaN(time) ? 0 : time
+}
+
+function getLogTime(inv: InviteItem) {
+  const candidates = [inv.revokedAt, inv.acceptedAt, inv.lastSentAt, inv.createdAt]
+    .filter(Boolean)
+    .map((value) => {
+      const time = new Date(value as string).getTime()
+      return Number.isNaN(time) ? 0 : time
+    })
+  if (candidates.length === 0) return 0
+  return Math.max(...candidates)
+}
+
 export function InvitationsTab({
   orgId,
   activeTab,
   invites,
   loading,
   onRefresh,
-  inviteDialogOpen,
-  invitePrefill,
+  onInviteUrl,
   onInviteDialogOpenChange,
   onInvitePrefillChange,
 }: {
@@ -92,13 +118,12 @@ export function InvitationsTab({
   invites: InviteItem[]
   loading: boolean
   onRefresh: () => Promise<void>
-  inviteDialogOpen: boolean
-  invitePrefill: { email: string; role: "admin" | "owner" } | null
+  onInviteUrl: (url: string) => void
   onInviteDialogOpenChange: (open: boolean) => void
-  onInvitePrefillChange: (prefill: { email: string; role: "admin" | "owner" } | null) => void
+  onInvitePrefillChange: (prefill: { email: string; role: "admin" | "owner" | "coach" } | null) => void
 }) {
-  const [inviteUrl, setInviteUrl] = useState<string | null>(null)
   const [submittingInviteId, setSubmittingInviteId] = useState<string | null>(null)
+  const [revokeInviteId, setRevokeInviteId] = useState<string | null>(null)
   const [filter, setFilter] = useState<InviteFilter>("pending")
   const [page, setPage] = useState(0)
 
@@ -122,8 +147,9 @@ export function InvitationsTab({
   }, [activeTab])
 
   const rows = useMemo(() => {
-    if (filter === "all") return invites
-    return invites.filter((inv) => inv.status === filter.toUpperCase())
+    const sorted = [...invites].sort((a, b) => getLogTime(b) - getLogTime(a))
+    if (filter === "all") return sorted
+    return sorted.filter((inv) => inv.status === filter.toUpperCase())
   }, [invites, filter])
 
   useEffect(() => {
@@ -149,7 +175,7 @@ export function InvitationsTab({
     setSubmittingInviteId(inviteId)
     try {
       const created = await apiResendInvite(inviteId)
-      setInviteUrl(created.inviteUrl)
+      onInviteUrl(created.inviteUrl)
       await onRefresh()
       toast.success("Invite resent")
     } catch (e) {
@@ -203,26 +229,19 @@ export function InvitationsTab({
   return (
     <div className="space-y-3">
       <Card>
-        <CardHeader className="bg-muted/40 px-4 border-b border-border/60">
-          <div className="flex h-14 items-center justify-between gap-4">
-            <div className="min-w-0">
-              <ToggleGroup
-                type="single"
-                value={filter}
-                onValueChange={(value) => {
-                  if (value) setFilter(value as InviteFilter)
-                }}
+        <CardHeader className="border-b border-border/60 bg-card px-5 py-4">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="text-sm font-medium text-foreground">Invitations</div>
+              <Badge
+                variant="outline"
+                className="rounded-full px-2 py-0 text-xs text-muted-foreground"
               >
-                {filterOptions.map((option) => (
-                  <ToggleGroupItem key={option.value} value={option.value}>
-                    {option.label}
-                    <span className="tabular-nums text-muted-foreground">{option.count}</span>
-                  </ToggleGroupItem>
-                ))}
-              </ToggleGroup>
+                {rows.length}
+              </Badge>
             </div>
             <Button
-              className="shrink-0"
+              variant="outline"
               onClick={() => {
                 onInvitePrefillChange(null)
                 onInviteDialogOpenChange(true)
@@ -233,6 +252,22 @@ export function InvitationsTab({
           </div>
         </CardHeader>
         <CardContent className="p-0">
+          <div className="border-b border-border/60 bg-muted/40 px-4 py-3">
+            <ToggleGroup
+              type="single"
+              value={filter}
+              onValueChange={(value) => {
+                if (value) setFilter(value as InviteFilter)
+              }}
+            >
+              {filterOptions.map((option) => (
+                <ToggleGroupItem key={option.value} value={option.value}>
+                  {option.label}
+                  <span className="tabular-nums text-muted-foreground">{option.count}</span>
+                </ToggleGroupItem>
+              ))}
+            </ToggleGroup>
+          </div>
           {loading ? (
             <div className="flex min-h-[200px] items-center px-6 py-10">
               <div className="space-y-2">
@@ -256,21 +291,25 @@ export function InvitationsTab({
             </div>
           ) : (
             <>
-              <div className="md:hidden">
+              <div className="lg:hidden">
                 <div className="divide-y divide-border">
                   {pagedRows.map((inv) => {
                     const busy = submittingInviteId === inv.id
                     const roleLabel = inv.role
                       ? inv.role.charAt(0).toUpperCase() + inv.role.slice(1)
                       : "—"
-                    const roleVariant = inv.role === "coach" ? "secondary" : "default"
+                    const roleClasses =
+                      rolePillClass[inv.role.toUpperCase() as keyof typeof rolePillClass] ??
+                      rolePillClass.ADMIN
                     const statusLabel = inv.status.charAt(0) + inv.status.slice(1).toLowerCase()
-                    const statusVariant =
+                    const statusClasses =
                       inv.status === "PENDING"
-                        ? "outline"
+                        ? "border bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-200 dark:border-amber-800/60"
                         : inv.status === "ACCEPTED"
-                          ? "default"
-                          : "secondary"
+                          ? "border bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-200 dark:border-emerald-800/60"
+                          : inv.status === "REVOKED"
+                            ? "border bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-200 dark:border-rose-800/60"
+                            : "border bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-950/40 dark:text-slate-200 dark:border-slate-800/60"
 
                     return (
                       <div key={inv.id} className="p-4">
@@ -278,42 +317,48 @@ export function InvitationsTab({
                           <div className="space-y-2">
                             <div className="text-sm font-medium text-foreground">{inv.email}</div>
                             <div className="flex flex-wrap items-center gap-2">
-                              <Badge variant={roleVariant}>{roleLabel}</Badge>
-                              <Badge variant={statusVariant}>{statusLabel}</Badge>
+                              <Badge className={`border ${roleClasses}`}>{roleLabel}</Badge>
                             </div>
                           </div>
 
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" aria-label="Open menu">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              {inv.status === "PENDING" || inv.status === "EXPIRED" ? (
-                                <DropdownMenuItem disabled={busy} onClick={() => onResend(inv.id)}>
-                                  Resend
-                                </DropdownMenuItem>
-                              ) : null}
+                          {inv.status === "ACCEPTED" ? null : (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" aria-label="Open menu">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                {inv.status === "PENDING" || inv.status === "EXPIRED" ? (
+                                  <DropdownMenuItem
+                                    disabled={busy}
+                                    onSelect={(event) => {
+                                      event.preventDefault()
+                                      onResend(inv.id)
+                                    }}
+                                  >
+                                    Resend
+                                  </DropdownMenuItem>
+                                ) : null}
 
-                              {inv.status === "PENDING" ? (
-                                <ConfirmDeleteDialog
-                                  title="Revoke invite"
-                                  description="This revokes the invite immediately."
-                                  confirmLabel="Revoke"
-                                  confirmLoading={busy}
-                                  onConfirm={() => onRevoke(inv.id)}
-                                >
-                                  <DropdownMenuItem className="text-destructive">
+                                {inv.status === "PENDING" || inv.status === "EXPIRED" ? (
+                                  <DropdownMenuSeparator />
+                                ) : null}
+
+                                {inv.status === "PENDING" ? (
+                                  <DropdownMenuItem
+                                    className="text-destructive focus:text-destructive"
+                                    onSelect={(event) => {
+                                      event.preventDefault()
+                                      setRevokeInviteId(inv.id)
+                                    }}
+                                  >
                                     <Ban className="mr-2 h-4 w-4" />
                                     Revoke
                                   </DropdownMenuItem>
-                                </ConfirmDeleteDialog>
-                              ) : null}
+                                ) : null}
 
-                              {inv.status === "REVOKED" ? (
-                                <>
-                                  <DropdownMenuSeparator />
+                                {inv.status === "REVOKED" ? (
                                   <DropdownMenuItem
                                     onClick={() => {
                                       const role = inv.role === "owner" ? "owner" : "admin"
@@ -323,10 +368,10 @@ export function InvitationsTab({
                                   >
                                     Re-invite
                                   </DropdownMenuItem>
-                                </>
-                              ) : null}
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                                ) : null}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          )}
                         </div>
 
                         <div className="mt-3 grid grid-cols-2 gap-3 text-xs text-muted-foreground">
@@ -350,7 +395,7 @@ export function InvitationsTab({
               </div>
 
               <TableSurface stickyHeader className="border-0 shadow-none">
-                <Table className="hidden min-w-[900px] md:table">
+                <Table className="hidden min-w-[900px] lg:table">
                   <TableHeader className="bg-muted/40">
                     <TableRow className="hover:bg-transparent border-b border-border/60">
                       <TableHead className="text-xs">Email</TableHead>
@@ -367,23 +412,27 @@ export function InvitationsTab({
                       const roleLabel = inv.role
                         ? inv.role.charAt(0).toUpperCase() + inv.role.slice(1)
                         : "—"
-                      const roleVariant = inv.role === "coach" ? "secondary" : "default"
+                      const roleClasses =
+                        rolePillClass[inv.role.toUpperCase() as keyof typeof rolePillClass] ??
+                        rolePillClass.ADMIN
                       const statusLabel = inv.status.charAt(0) + inv.status.slice(1).toLowerCase()
-                      const statusVariant =
+                      const statusClasses =
                         inv.status === "PENDING"
-                          ? "outline"
+                          ? "border bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-200 dark:border-amber-800/60"
                           : inv.status === "ACCEPTED"
-                            ? "default"
-                            : "secondary"
+                            ? "border bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-200 dark:border-emerald-800/60"
+                            : inv.status === "REVOKED"
+                              ? "border bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-200 dark:border-rose-800/60"
+                              : "border bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-950/40 dark:text-slate-200 dark:border-slate-800/60"
 
                       return (
                         <TableRow key={inv.id} className="hover:bg-muted/20">
                           <TableCell className="font-medium">{inv.email}</TableCell>
                           <TableCell className="text-xs text-muted-foreground">
-                            <Badge variant={roleVariant}>{roleLabel}</Badge>
+                            <Badge className={`border ${roleClasses}`}>{roleLabel}</Badge>
                           </TableCell>
                           <TableCell className="text-xs">
-                            <Badge variant={statusVariant}>{statusLabel}</Badge>
+                            <Badge className={statusClasses}>{statusLabel}</Badge>
                           </TableCell>
                           <TableCell className="text-xs text-muted-foreground tabular-nums whitespace-nowrap">
                             {fmtDate(inv.lastSentAt)}
@@ -393,40 +442,44 @@ export function InvitationsTab({
                           </TableCell>
                           <TableCell className="pr-2">
                             <div className="flex justify-end">
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon" aria-label="Open menu">
-                                    <MoreHorizontal className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  {inv.status === "PENDING" || inv.status === "EXPIRED" ? (
-                                    <DropdownMenuItem
-                                      disabled={busy}
-                                      onClick={() => onResend(inv.id)}
-                                    >
-                                      Resend
-                                    </DropdownMenuItem>
-                                  ) : null}
+                              {inv.status === "ACCEPTED" ? null : (
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon" aria-label="Open menu">
+                                      <MoreHorizontal className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    {inv.status === "PENDING" || inv.status === "EXPIRED" ? (
+                                      <DropdownMenuItem
+                                        disabled={busy}
+                                        onSelect={(event) => {
+                                          event.preventDefault()
+                                          onResend(inv.id)
+                                        }}
+                                      >
+                                        Resend
+                                      </DropdownMenuItem>
+                                    ) : null}
 
-                                  {inv.status === "PENDING" ? (
-                                    <ConfirmDeleteDialog
-                                      title="Revoke invite"
-                                      description="This revokes the invite immediately."
-                                      confirmLabel="Revoke"
-                                      confirmLoading={busy}
-                                      onConfirm={() => onRevoke(inv.id)}
-                                    >
-                                      <DropdownMenuItem className="text-destructive">
+                                    {inv.status === "PENDING" || inv.status === "EXPIRED" ? (
+                                      <DropdownMenuSeparator />
+                                    ) : null}
+
+                                    {inv.status === "PENDING" ? (
+                                      <DropdownMenuItem
+                                        className="text-destructive focus:text-destructive"
+                                        onSelect={(event) => {
+                                          event.preventDefault()
+                                          setRevokeInviteId(inv.id)
+                                        }}
+                                      >
                                         <Ban className="mr-2 h-4 w-4" />
                                         Revoke
                                       </DropdownMenuItem>
-                                    </ConfirmDeleteDialog>
-                                  ) : null}
+                                    ) : null}
 
-                                  {inv.status === "REVOKED" ? (
-                                    <>
-                                      <DropdownMenuSeparator />
+                                    {inv.status === "REVOKED" ? (
                                       <DropdownMenuItem
                                         onClick={() => {
                                           const role = inv.role === "owner" ? "owner" : "admin"
@@ -436,10 +489,10 @@ export function InvitationsTab({
                                       >
                                         Re-invite
                                       </DropdownMenuItem>
-                                    </>
-                                  ) : null}
-                                </DropdownMenuContent>
-                              </DropdownMenu>
+                                    ) : null}
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              )}
                             </div>
                           </TableCell>
                         </TableRow>
@@ -454,28 +507,32 @@ export function InvitationsTab({
         </CardContent>
       </Card>
 
-      <InviteDialog
-        orgId={orgId}
-        open={inviteDialogOpen}
-        prefill={invitePrefill}
-        onOpenChange={(open) => {
-          if (!open) onInvitePrefillChange(null)
-          onInviteDialogOpenChange(open)
-        }}
-        onCreated={(created) => {
-          setInviteUrl(created.inviteUrl)
-          onInvitePrefillChange(null)
-          onRefresh()
-        }}
-      />
+      <AlertDialog
+        open={!!revokeInviteId}
+        onOpenChange={(open) => (!open ? setRevokeInviteId(null) : null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Revoke invite</AlertDialogTitle>
+            <AlertDialogDescription>This revokes the invite immediately.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                if (!revokeInviteId) return
+                await onRevoke(revokeInviteId)
+                setRevokeInviteId(null)
+              }}
+              disabled={Boolean(revokeInviteId && submittingInviteId === revokeInviteId)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {revokeInviteId && submittingInviteId === revokeInviteId ? "Working..." : "Revoke"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
-      <InviteLinkDialog
-        open={!!inviteUrl}
-        inviteUrl={inviteUrl}
-        onOpenChange={(v) => {
-          if (!v) setInviteUrl(null)
-        }}
-      />
     </div>
   )
 }

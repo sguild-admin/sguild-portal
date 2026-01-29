@@ -49,6 +49,15 @@ export async function PATCH(
       throw new AppError("NOT_FOUND", "Member not found")
     }
 
+    if (member.role === "owner" && input.role !== "owner") {
+      const ownerCount = await prisma.member.count({
+        where: { organizationId: orgId, role: "owner" },
+      })
+      if (ownerCount <= 1) {
+        throw new AppError("BAD_REQUEST", "Organization must have an owner")
+      }
+    }
+
     const updated = await prisma.member.update({
       where: { id: memberId },
       data: { role: input.role },
@@ -77,6 +86,15 @@ export async function DELETE(
 
     if (!member || member.organizationId !== orgId) {
       throw new AppError("NOT_FOUND", "Member not found")
+    }
+
+    if (member.role === "owner") {
+      const ownerCount = await prisma.member.count({
+        where: { organizationId: orgId, role: "owner" },
+      })
+      if (ownerCount <= 1) {
+        throw new AppError("BAD_REQUEST", "Organization must have an owner")
+      }
     }
 
     await prisma.member.delete({ where: { id: memberId } })

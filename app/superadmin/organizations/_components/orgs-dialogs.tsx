@@ -14,10 +14,19 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import type { OrgRow } from "./orgs-table"
+import { slugifyOrgName } from "@/lib/utils/slug"
 
 type ApiOk<T> = { ok: true; data: T }
 type ApiFail = { ok: false; error: string }
 type ApiResponse<T> = ApiOk<T> | ApiFail
+
+type ZodIssue = {
+  code?: string
+  path?: Array<string | number>
+  message?: string
+  format?: string
+  pattern?: string
+}
 
 type OrgSettingsPayload = {
   settings?: {
@@ -63,6 +72,28 @@ async function apiUpdateOrg(
   return json.data
 }
 
+function getOrgUpdateErrorMessage(error: unknown) {
+  if (!(error instanceof Error)) return "Failed to update org"
+
+  try {
+    const parsed = JSON.parse(error.message) as ZodIssue[]
+    if (Array.isArray(parsed)) {
+      const slugIssue = parsed.find((issue) => issue.path?.includes("slug"))
+      if (slugIssue?.code === "invalid_format" || slugIssue?.pattern) {
+        return "Slug can only contain lowercase letters, numbers, and hyphens"
+      }
+    }
+  } catch {
+    // ignore JSON parse errors
+  }
+
+  if (error.message.includes("/^[a-z0-9-]+$/")) {
+    return "Slug can only contain lowercase letters, numbers, and hyphens"
+  }
+
+  return error.message
+}
+
 export function OrgDialogs({
   editOrg,
   onCloseEdit,
@@ -73,7 +104,7 @@ export function OrgDialogs({
   onUpdated: (org: OrgRow) => void
 }) {
   const [name, setName] = useState("")
-  const [slug, setSlug] = useState("")
+  const slugPreview = slugifyOrgName(name.trim())
   const [timeZone, setTimeZone] = useState(US_TIME_ZONES[0]?.value ?? "America/Chicago")
   const [offersOceanLessons, setOffersOceanLessons] = useState(false)
   const [loadingSettings, setLoadingSettings] = useState(false)
@@ -82,7 +113,6 @@ export function OrgDialogs({
   useEffect(() => {
     if (!editOrg) return
     setName(editOrg.name ?? "")
-    setSlug(editOrg.slug ?? "")
     setTimeZone(editOrg.settings?.timeZone ?? "America/Chicago")
     setOffersOceanLessons(Boolean(editOrg.settings?.offersOceanLessons))
     setLoadingSettings(true)
@@ -108,13 +138,13 @@ export function OrgDialogs({
     try {
       const updated = await apiUpdateOrg(editOrg.id, {
         name: name.trim(),
-        slug: slug.trim() || undefined,
+        slug: slugPreview || undefined,
         timeZone,
         offersOceanLessons,
       })
       onUpdated(updated)
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to update org")
+      toast.error(getOrgUpdateErrorMessage(e))
     } finally {
       setSubmittingEdit(false)
     }
@@ -136,6 +166,7 @@ export function OrgDialogs({
               onChange={(e) => setName(e.target.value)}
               placeholder="Organization name"
               autoComplete="off"
+              className="h-10 border-border/60 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/30"
             />
           </div>
 
@@ -143,11 +174,11 @@ export function OrgDialogs({
             <Label htmlFor="org-slug">Slug</Label>
             <Input
               id="org-slug"
-              value={slug}
-              onChange={(e) => setSlug(e.target.value)}
-              placeholder="org-slug"
-              autoComplete="off"
-              className="font-mono focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-input"
+              value={slugPreview}
+              readOnly
+              tabIndex={-1}
+              aria-label="Slug preview"
+              className="h-10 bg-muted/30 font-mono text-xs text-foreground/80 focus-visible:ring-0 focus-visible:ring-offset-0"
             />
             <div className="text-xs text-muted-foreground">
               Use lowercase letters, numbers, and hyphens
@@ -158,7 +189,7 @@ export function OrgDialogs({
             <Label htmlFor="org-timezone">Time zone</Label>
             <select
               id="org-timezone"
-              className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50"
+              className="h-10 w-full rounded-md border border-border/60 bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/30 disabled:cursor-not-allowed disabled:opacity-50"
               value={timeZone}
               onChange={(e) => setTimeZone(e.target.value)}
               disabled={loadingSettings}
@@ -173,7 +204,10 @@ export function OrgDialogs({
           </div>
 
           <div className="space-y-2">
-            <Label>Ocean Lessons</Label>
+            <Label>Ocean lessons</Label>
+            <div className="text-xs text-muted-foreground">
+              Allow ocean lessons to be booked for this organization
+            </div>
             <ToggleGroup
               type="single"
               value={offersOceanLessons ? "on" : "off"}
@@ -183,8 +217,8 @@ export function OrgDialogs({
               }}
               disabled={loadingSettings}
             >
-              <ToggleGroupItem value="on">On</ToggleGroupItem>
-              <ToggleGroupItem value="off">Off</ToggleGroupItem>
+              <ToggleGroupItem value="on">Enabled</ToggleGroupItem>
+              <ToggleGroupItem value="off">Disabled</ToggleGroupItem>
             </ToggleGroup>
           </div>
         </div>

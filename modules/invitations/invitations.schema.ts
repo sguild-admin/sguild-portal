@@ -1,6 +1,6 @@
 import { z } from "zod"
 
-export const inviteRoleSchema = z.enum(["admin", "owner"])
+export const inviteRoleSchema = z.enum(["admin", "owner", "coach"])
 
 export const createOrgInviteSchema = z.object({
   orgId: z.string().min(1),

@@ -21,9 +21,10 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { ConfirmDeleteDialog } from "@/app/superadmin/_components/confirm-delete-dialog"
-import { CreateAdminDialog } from "./create-admin-dialog"
+import { InviteAdminDialog } from "./invite-admin-dialog"
 import { RoleDialog, type RoleDialogData } from "./role-dialog"
 import { MoreHorizontal, Trash2, UserPlus } from "lucide-react"
+import { rolePillClass } from "@/app/superadmin/organizations/_components/role-pill"
 
 export type AdminItem = {
   id: string
@@ -69,20 +70,33 @@ function titleCaseRole(role: AdminItem["role"]) {
   return role.charAt(0).toUpperCase() + role.slice(1)
 }
 
+function getRolePillClass(role: AdminItem["role"]) {
+  const key = role.toUpperCase() as keyof typeof rolePillClass
+  return rolePillClass[key] ?? rolePillClass.ADMIN
+}
+
+function getOwnerGuardMessage(error: unknown) {
+  if (error instanceof Error) {
+    if (error.message.toLowerCase().includes("owner")) {
+      return "Organization must have an owner"
+    }
+    return error.message
+  }
+  return "Something went wrong"
+}
+
 export function AdminsTab({
   orgId,
   admins,
   loading,
   onRefresh,
-  onInviteRequested,
 }: {
   orgId: string
   admins: AdminItem[]
   loading: boolean
   onRefresh: () => Promise<void>
-  onInviteRequested: (email: string) => void
 }) {
-  const [createOpen, setCreateOpen] = useState(false)
+  const [inviteOpen, setInviteOpen] = useState(false)
   const [roleDialog, setRoleDialog] = useState<RoleDialogData | null>(null)
   const [submittingRole, setSubmittingRole] = useState(false)
   const [submittingRemoveId, setSubmittingRemoveId] = useState<string | null>(null)
@@ -121,7 +135,7 @@ export function AdminsTab({
       setRoleDialog(null)
       toast.success("Role updated")
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to update role")
+      toast.error(getOwnerGuardMessage(e))
     } finally {
       setSubmittingRole(false)
     }
@@ -134,7 +148,7 @@ export function AdminsTab({
       await onRefresh()
       toast.success("Admin removed")
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to remove admin")
+      toast.error(getOwnerGuardMessage(e))
     } finally {
       setSubmittingRemoveId(null)
     }
@@ -155,12 +169,12 @@ export function AdminsTab({
             </Badge>
           </div>
 
-          <Button variant="outline" onClick={() => setCreateOpen(true)} type="button">
-            Create admin
+          <Button variant="outline" onClick={() => setInviteOpen(true)} type="button">
+            Add admin
           </Button>
         </div>
 
-        <div className="md:hidden">
+        <div className="lg:hidden">
           {loading ? (
             <div className="px-6 py-10">{loadingState}</div>
           ) : rows.length === 0 ? (
@@ -177,7 +191,9 @@ export function AdminsTab({
                       <div className="text-xs text-muted-foreground">
                         {admin.user.email ?? "—"}
                       </div>
-                      <Badge variant="secondary" className="mt-2 w-fit rounded-full text-foreground/80">
+                      <Badge
+                        className={`mt-2 w-fit rounded-full border ${getRolePillClass(admin.role)}`}
+                      >
                         {titleCaseRole(admin.role)}
                       </Badge>
                     </div>
@@ -232,7 +248,7 @@ export function AdminsTab({
           )}
         </div>
 
-        <Table className="hidden min-w-[900px] md:table">
+        <Table className="hidden min-w-[900px] lg:table">
           <TableHeader className="bg-muted/20">
             <TableRow className="hover:bg-transparent">
               <TableHead className="text-xs">User</TableHead>
@@ -270,7 +286,7 @@ export function AdminsTab({
                   </TableCell>
 
                   <TableCell className="py-5 text-center">
-                    <Badge variant="secondary" className="rounded-full text-foreground/80">
+                    <Badge className={`rounded-full border ${getRolePillClass(admin.role)}`}>
                       {titleCaseRole(admin.role)}
                     </Badge>
                   </TableCell>
@@ -324,16 +340,7 @@ export function AdminsTab({
         </Table>
       </TableSurface>
 
-      <CreateAdminDialog
-        orgId={orgId}
-        open={createOpen}
-        onOpenChange={setCreateOpen}
-        onCreated={async () => {
-          setCreateOpen(false)
-          await onRefresh()
-        }}
-        onInviteInstead={(email) => onInviteRequested(email)}
-      />
+      <InviteAdminDialog orgId={orgId} open={inviteOpen} onOpenChange={setInviteOpen} />
 
       <RoleDialog
         open={!!roleDialog}

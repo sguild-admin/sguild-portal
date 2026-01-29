@@ -4,6 +4,13 @@ import { useState } from "react"
 import { toast } from "sonner"
 import { authClient } from "@/lib/auth/auth-client"
 import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 
 type Mode = "sign-in" | "sign-up"
 
@@ -13,6 +20,8 @@ export function SignInCard() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [busy, setBusy] = useState(false)
+  const [inviteOpen, setInviteOpen] = useState(false)
+  const [inviteLink, setInviteLink] = useState("")
 
   async function onEmailSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -44,6 +53,31 @@ export function SignInCard() {
       toast.error(err instanceof Error ? err.message : "Google sign in failed")
       setBusy(false)
     }
+  }
+
+  function onInviteSubmit() {
+    const value = inviteLink.trim()
+    if (!value) {
+      toast.error("Paste an invite link or token")
+      return
+    }
+
+    let token = value
+    try {
+      if (value.includes("token=")) {
+        const url = new URL(value)
+        token = url.searchParams.get("token") ?? ""
+      }
+    } catch {
+      // allow raw token input
+    }
+
+    if (!token) {
+      toast.error("Invalid invite link")
+      return
+    }
+
+    window.location.href = `/invite?token=${encodeURIComponent(token)}`
   }
 
   return (
@@ -120,6 +154,35 @@ export function SignInCard() {
           Continue with Google
         </Button>
       </form>
+
+      <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
+        <DialogContent className="max-w-md p-6">
+          <DialogHeader className="flex flex-row items-center justify-between space-y-0">
+            <DialogTitle>Paste invite link</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-2">
+            <label className="text-sm font-medium">Invite link or token</label>
+            <input
+              className="h-10 rounded-md border border-border/60 bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/30"
+              placeholder="https://app.example.com/invite?token=..."
+              value={inviteLink}
+              onChange={(e) => setInviteLink(e.target.value)}
+              autoComplete="off"
+            />
+            <p className="pl-1 text-xs text-muted-foreground">
+              We’ll route you to the invite once you paste it.
+            </p>
+          </div>
+          <DialogFooter className="mt-2 flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setInviteOpen(false)} type="button">
+              Cancel
+            </Button>
+            <Button type="button" onClick={onInviteSubmit}>
+              Continue
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

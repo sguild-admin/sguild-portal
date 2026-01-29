@@ -34,6 +34,11 @@ export const superAdminRepo = {
         select: { id: true, name: true, slug: true, createdAt: true },
       })
 
+      await tx.orgSettings.create({
+        data: { orgId: org.id },
+        select: { id: true },
+      })
+
       await tx.member.create({
         data: {
           id: crypto.randomUUID(),

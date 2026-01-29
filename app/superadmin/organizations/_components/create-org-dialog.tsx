@@ -104,6 +104,7 @@ export function CreateOrgDialog({
               placeholder="Sguild Swim Dallas"
               autoComplete="off"
               disabled={submitting}
+              className="h-10 border-border/60 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/30"
               onKeyDown={(e) => {
                 if (e.key === "Enter") onSubmit()
               }}
@@ -117,7 +118,7 @@ export function CreateOrgDialog({
               readOnly
               tabIndex={-1}
               aria-label="Slug preview"
-              className="font-mono text-xs text-foreground/80 bg-muted/30"
+              className="h-10 bg-muted/30 font-mono text-xs text-foreground/80"
             />
             <div className="text-xs text-muted-foreground">
               Lowercase, numbers, hyphens

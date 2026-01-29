@@ -56,4 +56,12 @@ export const membersRepo = {
       data: { role },
     })
   },
+
+  upsertByUserAndOrg(userId: string, orgId: string, role: MemberRole) {
+    return prisma.member.upsert({
+      where: { organizationId_userId: { organizationId: orgId, userId } },
+      update: { role },
+      create: { userId, organizationId: orgId, role, createdAt: new Date() },
+    })
+  },
 }

@@ -12,7 +12,7 @@ export function TableSurface({
 }) {
   return (
     <div className={cn("rounded-lg border border-border bg-card shadow-sm overflow-hidden", className)}>
-      <div className="overflow-x-auto">
+      <div className="overflow-x-hidden">
         <div className={cn(stickyHeader ? "[&_thead]:sticky [&_thead]:top-0 [&_thead]:z-10" : "")}>
           {children}
         </div>

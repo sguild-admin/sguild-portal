@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
 
 export type CoachRoleDialogData = {
   memberId: string
@@ -39,26 +40,33 @@ export function CoachRoleDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-white text-slate-900 shadow-xl sm:max-w-md">
-        <DialogHeader>
+      <DialogContent className="max-w-md p-6">
+        <DialogHeader className="flex flex-row items-center justify-between space-y-0">
           <DialogTitle>Change role</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-2">
-          <Label htmlFor="coach-role">Role for {data?.name ?? ""}</Label>
-          <select
-            id="coach-role"
-            className="h-10 w-full rounded-md border px-3 text-sm"
-            value={role}
-            onChange={(e) => setRole(e.target.value as CoachRoleDialogData["role"])}
-          >
-            <option value="coach">Coach</option>
-            <option value="member">Member</option>
-          </select>
+        <div className="grid gap-5">
+          <div className="grid gap-2">
+            <Label htmlFor="coach-role" className="text-sm font-medium">
+              Role
+            </Label>
+            <Input
+              id="coach-role"
+              value="Coach"
+              readOnly
+              className="h-10 border-border/60 bg-muted/30 focus-visible:ring-0 focus-visible:ring-offset-0"
+            />
+            <p className="pl-1 text-xs text-muted-foreground">Coach tools only</p>
+          </div>
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} type="button" disabled={submitting}>
+        <DialogFooter className="mt-2 flex justify-end gap-2">
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            type="button"
+            disabled={submitting}
+          >
             Cancel
           </Button>
           <Button onClick={() => onSubmit(role)} type="button" disabled={submitting}>

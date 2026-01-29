@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useId, useState } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -10,6 +10,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 export type RoleDialogData = {
   memberId: string
@@ -31,6 +38,14 @@ export function RoleDialog({
   submitting?: boolean
 }) {
   const [role, setRole] = useState<RoleDialogData["role"]>("admin")
+  const roleDescriptionId = useId()
+
+  const roleDescriptions: Record<RoleDialogData["role"], string> = {
+    owner: "Full access including billing and org settings",
+    admin: "Manage staff, schedules, clients",
+    coach: "Coach tools only",
+    member: "Basic access to assigned content",
+  }
 
   useEffect(() => {
     if (!data) return
@@ -39,26 +54,50 @@ export function RoleDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-white text-slate-900 shadow-xl sm:max-w-md">
-        <DialogHeader>
+      <DialogContent className="max-w-md p-6">
+        <DialogHeader className="flex flex-row items-center justify-between space-y-0">
           <DialogTitle>Change role</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-2">
-          <Label htmlFor="role">Role for {data?.name ?? ""}</Label>
-          <select
-            id="role"
-            className="h-10 w-full rounded-md border px-3 text-sm"
-            value={role}
-            onChange={(e) => setRole(e.target.value as RoleDialogData["role"])}
-          >
-            <option value="owner">Owner</option>
-            <option value="admin">Admin</option>
-          </select>
+        <div className="grid gap-5">
+          <div className="grid gap-2">
+            <Label htmlFor="role" className="text-sm font-medium">
+              Role for {data?.name ?? ""} <span className="text-destructive">*</span>
+            </Label>
+            <Select value={role} onValueChange={(value) => setRole(value as RoleDialogData["role"])}>
+              <SelectTrigger
+                id="role"
+                className="h-10 border-border/60 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/30"
+                aria-describedby={roleDescriptionId}
+              >
+                <SelectValue placeholder="Select a role" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem
+                  value="owner"
+                  text="Owner"
+                  description="Full access including billing and org settings"
+                />
+                <SelectItem
+                  value="admin"
+                  text="Admin"
+                  description="Manage staff, schedules, clients"
+                />
+              </SelectContent>
+            </Select>
+            <p id={roleDescriptionId} className="pl-1 text-xs text-muted-foreground">
+              {roleDescriptions[role]}
+            </p>
+          </div>
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} type="button" disabled={submitting}>
+        <DialogFooter className="mt-2 flex justify-end gap-2">
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            type="button"
+            disabled={submitting}
+          >
             Cancel
           </Button>
           <Button onClick={() => onSubmit(role)} type="button" disabled={submitting}>
