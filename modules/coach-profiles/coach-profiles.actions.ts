@@ -1,7 +1,6 @@
 "use server"
 
 import { headers } from "next/headers"
-import { auth } from "@/lib/auth/auth"
 import { requireActiveOrgId, requireAdminOrOwner, requireSession } from "@/lib/auth/guards"
 import { coachProfilesRepo } from "./coach-profiles.repo"
 import { UpsertCoachProfileSchema, SetCoachStatusSchema } from "./coach-profiles.schema"
@@ -20,7 +19,7 @@ export async function getMyCoachProfileAction() {
   const session = await requireSession(hdrs)
   const orgId = await requireActiveOrgId(hdrs)
   const userId = session.userId
-  const row = await coachProfilesRepo.getByUserAndOrg(orgId, userId)
+  const row = await coachProfilesRepo.getByOrgUser(orgId, userId)
   return row ? toCoachProfileDto(row as any) : null
 }
 

@@ -1,13 +1,19 @@
 // modules/members/members.service.ts
 import { auth } from "@/lib/auth/auth"
+import { prisma } from "@/lib/db/prisma"
 import { requireActiveOrgId, requireAdminOrOwner, requireSession } from "@/lib/auth/guards"
+import { coachProfilesRepo } from "@/modules/coach-profiles/coach-profiles.repo"
+import { membersRepo } from "./members.repo"
 
 type ListMembersInput = Partial<{
-  role: "owner" | "admin" | "coach" | "member"
-  status: "active" | "disabled"
+  role: "owner" | "admin" | "member"
+  status: "ACTIVE" | "DISABLED"
   limit: number
   offset: number
 }>
+
+type MemberRole = "owner" | "admin" | "member"
+type MemberStatus = "ACTIVE" | "DISABLED"
 
 export const membersService = {
   async getActiveMember(headers: Headers) {
@@ -33,14 +39,14 @@ export const membersService = {
 
     const filtered = members.filter((m) => {
       const roleOk = input?.role ? String(m.role) === input.role : true
-      const statusOk = input?.status ? String(m.status ?? "active") === input.status : true
+      const statusOk = input?.status ? String(m.status ?? "ACTIVE") === input.status : true
       return roleOk && statusOk
     })
 
     return filtered
   },
 
-  async updateRole(headers: Headers, input: { memberId: string; role: "owner" | "admin" | "coach" | "member" }) {
+  async updateRole(headers: Headers, input: { memberId: string; role: MemberRole }) {
     await requireAdminOrOwner(headers)
     const orgId = await requireActiveOrgId(headers)
 
@@ -65,5 +71,36 @@ export const membersService = {
         memberIdOrEmail: input.memberIdOrEmail,
       } as any,
     })
+  },
+
+  async setRole(orgId: string, userId: string, role: MemberRole) {
+    return membersRepo.setRole(orgId, userId, role)
+  },
+
+  async setStatus(orgId: string, userId: string, status: MemberStatus) {
+    return membersRepo.setStatus(orgId, userId, status)
+  },
+
+  async disableAccess(orgId: string, userId: string) {
+    return prisma.$transaction([
+      prisma.member.update({
+        where: { organizationId_userId: { organizationId: orgId, userId } },
+        data: { status: "DISABLED" },
+      }),
+      prisma.coachProfile.updateMany({
+        where: { orgId, userId },
+        data: { status: "DISABLED" },
+      }),
+    ])
+  },
+
+  async demoteAdminToCoach(orgId: string, userId: string) {
+    return prisma.$transaction([
+      prisma.member.update({
+        where: { organizationId_userId: { organizationId: orgId, userId } },
+        data: { role: "member", status: "ACTIVE" },
+      }),
+      coachProfilesRepo.upsertStatus(orgId, userId, "ACTIVE"),
+    ])
   },
 }

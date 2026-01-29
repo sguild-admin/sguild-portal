@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input"
 export type CoachRoleDialogData = {
   memberId: string
   name: string
-  role: "coach" | "member"
+  role: "member"
 }
 
 export function CoachRoleDialog({
@@ -31,7 +31,7 @@ export function CoachRoleDialog({
   onSubmit: (role: CoachRoleDialogData["role"]) => void
   submitting?: boolean
 }) {
-  const [role, setRole] = useState<CoachRoleDialogData["role"]>("coach")
+  const [role, setRole] = useState<CoachRoleDialogData["role"]>("member")
 
   useEffect(() => {
     if (!data) return
@@ -52,11 +52,11 @@ export function CoachRoleDialog({
             </Label>
             <Input
               id="coach-role"
-              value="Coach"
+              value="Member"
               readOnly
               className="h-10 border-border/60 bg-muted/30 focus-visible:ring-0 focus-visible:ring-offset-0"
             />
-            <p className="pl-1 text-xs text-muted-foreground">Coach tools only</p>
+            <p className="pl-1 text-xs text-muted-foreground">Coach tools are enabled via profile</p>
           </div>
         </div>
 

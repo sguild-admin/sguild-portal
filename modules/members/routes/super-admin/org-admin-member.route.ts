@@ -3,12 +3,12 @@ import { ok, fail } from "@/lib/http/response"
 import { AppError } from "@/lib/http/errors"
 import { prisma } from "@/lib/db/prisma"
 import { requireSuperAdmin } from "@/lib/auth/guards"
-import { MemberRoleSchema } from "../../members.schema"
+const AdminRoleSchema = z.enum(["owner", "admin"])
 
 const ParamsSchema = z.object({ orgId: z.string().min(1), memberId: z.string().min(1) })
 
 const UpdateRoleSchema = z.object({
-  role: MemberRoleSchema,
+  role: AdminRoleSchema,
 })
 
 function toAdminDto(member: {
