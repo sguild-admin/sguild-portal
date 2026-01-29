@@ -39,18 +39,18 @@ export async function GET(req: Request, ctx: { params: Promise<{ orgId: string }
     const params = await ctx.params
     const { orgId } = ParamsSchema.parse(params)
 
-    const rows = await prisma.member.findMany({
-      where: {
-        organizationId: orgId,
-        role: { notIn: ["admin", "owner"] },
-      },
-      include: { user: true },
-      orderBy: { createdAt: "desc" },
+    const profiles = await prisma.coachProfile.findMany({
+      where: { orgId },
+      select: { userId: true, status: true },
     })
 
-    const profiles = await prisma.coachProfile.findMany({
-      where: { orgId, userId: { in: rows.map((row) => row.userId) } },
-      select: { userId: true, status: true },
+    const userIds = profiles.map((profile) => profile.userId)
+    if (userIds.length === 0) return ok([])
+
+    const rows = await prisma.member.findMany({
+      where: { organizationId: orgId, userId: { in: userIds } },
+      include: { user: true },
+      orderBy: { createdAt: "desc" },
     })
 
     const statusByUserId = new Map(profiles.map((profile) => [profile.userId, profile.status]))
@@ -59,6 +59,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ orgId: string }
       rows.map((row) =>
         toCoachDto({
           ...row,
+          role: "coach",
           status: statusByUserId.get(row.userId) ?? "ACTIVE",
         })
       )

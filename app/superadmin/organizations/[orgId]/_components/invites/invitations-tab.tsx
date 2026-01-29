@@ -318,6 +318,7 @@ export function InvitationsTab({
                             <div className="text-sm font-medium text-foreground">{inv.email}</div>
                             <div className="flex flex-wrap items-center gap-2">
                               <Badge className={`border ${roleClasses}`}>{roleLabel}</Badge>
+                              <Badge className={statusClasses}>{statusLabel}</Badge>
                             </div>
                           </div>
 

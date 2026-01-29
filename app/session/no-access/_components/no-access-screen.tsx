@@ -2,23 +2,17 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { authClient } from "@/lib/auth/auth-client"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { useState } from "react"
 import { toast } from "sonner"
+import { SignOutButton } from "@/components/common/sign-out-button"
 
 export function NoAccessScreen() {
   const router = useRouter()
   const [inviteOpen, setInviteOpen] = useState(false)
   const [inviteLink, setInviteLink] = useState("")
-
-  const onSignOut = async () => {
-    await authClient.signOut()
-    router.replace("/sign-in")
-    router.refresh()
-  }
 
   const onInviteSubmit = () => {
     const value = inviteLink.trim()
@@ -65,9 +59,7 @@ export function NoAccessScreen() {
               Click here
             </button>
           </div>
-          <Button variant="destructive" onClick={onSignOut}>
-            Sign out
-          </Button>
+          <SignOutButton variant="destructive">Sign out</SignOutButton>
         </CardContent>
       </Card>
 

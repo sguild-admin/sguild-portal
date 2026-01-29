@@ -56,3 +56,4 @@ export async function requireSuperAdmin(headers: Headers) {
   return { session: result.session, superAdminId: row.id }
 }
 
+

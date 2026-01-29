@@ -1,23 +1,8 @@
 "use client"
 
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { authClient } from "@/lib/auth/auth-client"
+import { SignOutButton } from "@/components/common/sign-out-button"
 
 export function SuperAdminBanner() {
-  const router = useRouter()
-
-  async function onSignOut() {
-    await authClient.signOut({
-      fetchOptions: {
-        onSuccess: () => {
-          router.push("/sign-in")
-          router.refresh()
-        },
-      },
-    })
-  }
-
   return (
     <div className="border-b border-border/60 bg-card shadow-sm">
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-4">
@@ -26,9 +11,9 @@ export function SuperAdminBanner() {
           <div className="text-xs text-muted-foreground">Manage organizations and admins</div>
         </div>
 
-        <Button variant="outline" size="sm" onClick={onSignOut}>
+        <SignOutButton variant="outline" size="sm" redirectMethod="push">
           Sign out
-        </Button>
+        </SignOutButton>
       </div>
     </div>
   )

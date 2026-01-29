@@ -4,26 +4,26 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-}
+  }
 
 model OrgSettings {
-  id            String       @id @default(uuid())
-  orgId         String       @unique
-  timeZone            String       @default("America/Chicago")
-  currency            String       @default("USD")
-  offersOceanLessons  Boolean      @default(false)
-  acuityEnabled       Boolean      @default(false)
-  acuityUserId  String?
-  acuityApiKey  String?
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
-  org           Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  id                String       @id @default(uuid())
+  orgId             String       @unique
+  timeZone          String       @default("America/Chicago")
+  currency          String       @default("USD")
+  offersOceanLessons Boolean     @default(false)
+  acuityEnabled     Boolean      @default(false)
+  acuityUserId      String?
+  acuityApiKey      String?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  org               Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
 
   @@map("org_settings")
 }
 
 model CoachProfile {
-  id             String              @id @default(uuid())
+  id             String              @id @default(cuid())
   orgId          String
   userId         String
   status         CoachStatus         @default(ACTIVE)
@@ -35,27 +35,32 @@ model CoachProfile {
   phone          String?
   createdAt      DateTime            @default(now())
   updatedAt      DateTime            @updatedAt
+
   org            Organization        @relation(fields: [orgId], references: [id], onDelete: Cascade)
   user           User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Enforce "coach implies member" using the composite unique on Member
+  member         Member              @relation("MemberCoachProfile", fields: [orgId, userId], references: [orgId, userId], onDelete: Cascade)
+
   availabilities CoachAvailability[]
 
   @@unique([orgId, userId])
-  @@index([orgId])
+  @@index([orgId, status])
   @@index([userId])
   @@map("coach_profile")
 }
 
 model CoachAvailability {
-  id             String       @id @default(uuid())
+  id             String       @id @default(cuid())
   coachProfileId String
-  dayOfWeek      Int
-  startTime      String
-  endTime        String
+  dayOfWeek      Weekday
+  startMin       Int
+  endMin         Int
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
   coachProfile   CoachProfile @relation(fields: [coachProfileId], references: [id], onDelete: Cascade)
 
-  @@index([coachProfileId])
+  @@index([coachProfileId, dayOfWeek])
   @@map("coach_availability")
 }
 
@@ -88,6 +93,7 @@ model User {
   banReason     String?
   banned        Boolean?       @default(false)
   role          String?
+
   accounts      Account[]
   coachProfiles CoachProfile[]
   invitations   Invitation[]
@@ -151,9 +157,10 @@ model Organization {
   name          String
   slug          String         @unique
   logo          String?
-  metadata      String?
+  metadata      Json?
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
+
   coachProfiles CoachProfile[]
   invitations   Invitation[]
   members       Member[]
@@ -163,35 +170,41 @@ model Organization {
 }
 
 model Member {
-  id             String       @id @default(uuid())
-  organizationId String
-  userId         String
-  role           String       @default("member")
-  createdAt      DateTime     @default(now())
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id           String           @id @default(cuid())
+  orgId        String           @map("organizationId")
+  userId       String
+  role         OrgRole          @default(member)
+  status       MembershipStatus @default(ACTIVE)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
 
-  @@unique([organizationId, userId])
-  @@index([organizationId])
+  organization Organization     @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  coachProfile CoachProfile?    @relation("MemberCoachProfile")
+
+  @@unique([orgId, userId])
+  @@index([orgId, role, status])
   @@index([userId])
   @@map("member")
 }
 
 model Invitation {
-  id             String       @id @default(uuid())
+  id             String         @id @default(uuid())
   organizationId String
   email          String
-  role           String
+  role           InvitationRole
   expiresAt      DateTime
-  createdAt      DateTime     @default(now())
+  createdAt      DateTime       @default(now())
   inviterId      String
   acceptedAt     DateTime?
-  tokenHash      String       @unique
+  tokenHash      String         @unique
   lastSentAt     DateTime?
   revokedAt      DateTime?
   tokenLast4     String?
-  inviter        User         @relation(fields: [inviterId], references: [id], onDelete: Cascade)
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  inviter        User           @relation(fields: [inviterId], references: [id], onDelete: Cascade)
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
   @@index([email])
@@ -202,4 +215,31 @@ model Invitation {
 enum CoachStatus {
   ACTIVE
   DISABLED
+}
+
+enum MembershipStatus {
+  ACTIVE
+  DISABLED
+}
+
+enum OrgRole {
+  owner
+  admin
+  member
+}
+
+enum InvitationRole {
+  owner
+  admin
+  coach
+}
+
+enum Weekday {
+  MON
+  TUE
+  WED
+  THU
+  FRI
+  SAT
+  SUN
 }

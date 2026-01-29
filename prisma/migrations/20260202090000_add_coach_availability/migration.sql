@@ -4,8 +4,8 @@ ADD COLUMN     "nickname" TEXT;
 
 -- CreateTable
 CREATE TABLE "coach_availability" (
-    "id" UUID NOT NULL,
-    "coachProfileId" UUID NOT NULL,
+    "id" TEXT NOT NULL,
+    "coachProfileId" TEXT NOT NULL,
     "dayOfWeek" INTEGER NOT NULL,
     "startTime" TEXT NOT NULL,
     "endTime" TEXT NOT NULL,

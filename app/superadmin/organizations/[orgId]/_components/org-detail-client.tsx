@@ -37,7 +37,7 @@ type TabKey = "admins" | "coaches" | "invitations"
 
 type InvitePrefill = {
   email: string
-  role: "admin" | "owner"
+  role: "admin" | "owner" | "coach"
 }
 
 async function apiGetAdmins(orgId: string): Promise<AdminItem[]> {

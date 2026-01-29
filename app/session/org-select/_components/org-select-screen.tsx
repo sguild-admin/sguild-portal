@@ -9,6 +9,7 @@ import { useBootstrap } from "@/components/shell/bootstrap-provider"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
+import { SignOutButton } from "@/components/common/sign-out-button"
 import {
   Dialog,
   DialogContent,
@@ -132,12 +133,6 @@ export function OrgSelectScreen() {
     await loadOrgs()
   }
 
-  const onSignOut = async () => {
-    await authClient.signOut()
-    router.replace("/sign-in")
-    router.refresh()
-  }
-
   const onInviteSubmit = () => {
     const value = inviteLink.trim()
     if (!value) {
@@ -167,13 +162,12 @@ export function OrgSelectScreen() {
 
   return (
     <main className="relative mx-auto flex min-h-dvh w-full max-w-3xl items-center px-4 py-10">
-      <button
-        type="button"
-        className="absolute right-4 top-4 text-xs text-muted-foreground underline underline-offset-4"
-        onClick={onSignOut}
+      <SignOutButton
+        variant="ghost"
+        className="absolute right-4 top-4 h-auto p-0 text-xs text-muted-foreground underline underline-offset-4"
       >
         Sign out
-      </button>
+      </SignOutButton>
       <Card className="w-full">
         <CardHeader>
           <CardTitle>Select an organization</CardTitle>

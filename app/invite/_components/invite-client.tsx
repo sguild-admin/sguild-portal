@@ -4,8 +4,7 @@ import { useEffect, useMemo, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
-import { authClient } from "@/lib/auth/auth-client"
-import { toast } from "sonner"
+import { SignOutButton } from "@/components/common/sign-out-button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 type ApiOk<T> = { ok: true; data: T }
@@ -73,16 +72,6 @@ export function InviteClient() {
     router.replace(`/sign-in?next=${encodeURIComponent(next)}`)
   }
 
-  const onSignOut = async () => {
-    try {
-      await authClient.signOut()
-      router.replace("/sign-in")
-      router.refresh()
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Sign out failed")
-    }
-  }
-
   const onGoSession = () => {
     router.replace("/portal")
     router.refresh()
@@ -90,13 +79,13 @@ export function InviteClient() {
 
   return (
     <main className="relative mx-auto flex min-h-dvh max-w-xl items-center px-4">
-      <button
-        type="button"
-        className="absolute right-4 top-4 text-xs text-muted-foreground underline underline-offset-4"
-        onClick={onSignOut}
+      <SignOutButton
+        variant="ghost"
+        className="absolute right-4 top-4 h-auto p-0 text-xs text-muted-foreground underline underline-offset-4"
+        showErrorToast
       >
         Sign out
-      </button>
+      </SignOutButton>
       <Card className="w-full">
         <CardHeader>
           <CardTitle>Invite</CardTitle>

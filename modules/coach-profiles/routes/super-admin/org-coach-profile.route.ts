@@ -5,8 +5,8 @@ import { prisma } from "@/lib/db/prisma"
 import { requireSuperAdmin } from "@/lib/auth/guards"
 import { coachAvailabilityRepo } from "@/modules/coach-availability"
 import { CoachAvailabilityListSchema } from "@/modules/coach-availability/coach-availability.schema"
-import { CoachStatusSchema, UpsertCoachProfileSchema } from "../coach-profiles.schema"
-import { toCoachProfileDto } from "../coach-profiles.dto"
+import { CoachStatusSchema, UpsertCoachProfileSchema } from "../../coach-profiles.schema"
+import { toCoachProfileDto } from "../../coach-profiles.dto"
 
 const ParamsSchema = z.object({ orgId: z.string().min(1), memberId: z.string().min(1) })
 
@@ -95,14 +95,14 @@ export async function PATCH(
 
     if (input.availability) {
       await coachAvailabilityRepo.replaceForCoachProfile(profile.id, input.availability)
-      profile = await prisma.coachProfile.findUnique({
+      const refreshed = await prisma.coachProfile.findUnique({
         where: { orgId_userId: { orgId, userId } },
         include: { user: true, availabilities: true },
       })
-    }
-
-    if (!profile) {
-      throw new AppError("NOT_FOUND", "Coach profile not found")
+      if (!refreshed) {
+        throw new AppError("NOT_FOUND", "Coach profile not found")
+      }
+      profile = refreshed
     }
 
     return ok(toCoachProfileDto(profile as any))
