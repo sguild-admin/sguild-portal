@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db/prisma"
 export type OrgSettingsUpdate = Partial<{
   timeZone: string
   currency: string
+  offersOceanLessons: boolean
   acuityEnabled: boolean
   acuityUserId: string | null
   acuityApiKey: string | null

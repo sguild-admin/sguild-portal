@@ -9,9 +9,10 @@ datasource db {
 model OrgSettings {
   id            String       @id @default(uuid())
   orgId         String       @unique
-  timeZone      String       @default("America/Chicago")
-  currency      String       @default("USD")
-  acuityEnabled Boolean      @default(false)
+  timeZone            String       @default("America/Chicago")
+  currency            String       @default("USD")
+  offersOceanLessons  Boolean      @default(false)
+  acuityEnabled       Boolean      @default(false)
   acuityUserId  String?
   acuityApiKey  String?
   createdAt     DateTime     @default(now())

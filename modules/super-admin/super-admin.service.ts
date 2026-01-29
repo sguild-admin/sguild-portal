@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth/auth"
 import { requireSession, requireSuperAdmin } from "@/lib/auth/guards"
 import { AppError } from "@/lib/http/errors"
 import { slugifyOrgName } from "@/lib/utils/slug"
+import { orgSettingsRepo } from "@/modules/org-settings/org-settings.repo"
 import { superAdminRepo } from "./super-admin.repo"
 import {
   toSuperAdminOrgDto,
@@ -98,7 +99,21 @@ export const superAdminService = {
       slug: input.data.slug,
     })
 
-    return toSuperAdminOrgDto(updated)
+    const settingsUpdate: { timeZone?: string; offersOceanLessons?: boolean } = {}
+    if (typeof input.data.timeZone === "string") {
+      settingsUpdate.timeZone = input.data.timeZone
+    }
+    if (typeof input.data.offersOceanLessons === "boolean") {
+      settingsUpdate.offersOceanLessons = input.data.offersOceanLessons
+    }
+
+    if (Object.keys(settingsUpdate).length > 0) {
+      await orgSettingsRepo.ensureDefaults(input.orgId)
+      await orgSettingsRepo.updateByOrgId(input.orgId, settingsUpdate)
+    }
+
+    const refreshed = await superAdminRepo.getOrganizationById(input.orgId)
+    return toSuperAdminOrgDto(refreshed ?? updated)
   },
 
   async deleteOrg(headers: Headers, input: { orgId: string }) {

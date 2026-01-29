@@ -3,6 +3,7 @@ import { z } from "zod"
 export const UpdateOrgSettingsSchema = z.object({
   timeZone: z.string().trim().min(1).max(100).optional(),
   currency: z.string().trim().min(1).max(10).optional(),
+  offersOceanLessons: z.boolean().optional(),
 
   acuityEnabled: z.boolean().optional(),
   acuityUserId: z.string().trim().min(1).max(500).nullable().optional(),

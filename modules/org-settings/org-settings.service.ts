@@ -6,6 +6,7 @@ import { orgSettingsRepo } from "./org-settings.repo"
 type UpdateOrgSettingsInput = Partial<{
   timeZone: string
   currency: string
+  offersOceanLessons: boolean
   acuityEnabled: boolean
   acuityUserId: string | null
   acuityApiKey: string | null

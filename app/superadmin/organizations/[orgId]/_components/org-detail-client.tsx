@@ -10,6 +10,7 @@ import { ConfirmDeleteDialog } from "@/app/superadmin/_components/confirm-delete
 import { SuperAdminBreadcrumbs } from "@/app/superadmin/_components/superadmin-breadcrumbs"
 import { OrgDialogs } from "@/app/superadmin/organizations/_components/orgs-dialogs"
 import { AdminsTab, type AdminItem } from "@/app/superadmin/organizations/[orgId]/_components/admins/admins-tab"
+import { CoachesTab, type CoachItem } from "@/app/superadmin/organizations/[orgId]/_components/coaches/coaches-tab"
 import { InvitationsTab, type InviteItem } from "@/app/superadmin/organizations/[orgId]/_components/invites/invitations-tab"
 import { Trash2 } from "lucide-react"
 import { PageScaffold } from "@/components/shell/page-scaffold"
@@ -20,13 +21,17 @@ export type OrgDto = {
   slug?: string | null
   createdAt?: unknown
   _count?: { members: number }
+  settings?: {
+    timeZone: string
+    offersOceanLessons: boolean
+  } | null
 }
 
 type ApiOk<T> = { ok: true; data: T }
 type ApiFail = { ok: false; error: string; code?: string }
 type ApiResponse<T> = ApiOk<T> | ApiFail
 
-type TabKey = "admins" | "invitations"
+type TabKey = "admins" | "coaches" | "invitations"
 
 type InvitePrefill = {
   email: string
@@ -53,13 +58,25 @@ async function apiGetInvites(orgId: string): Promise<InviteItem[]> {
   return json.data
 }
 
+async function apiGetCoaches(orgId: string): Promise<CoachItem[]> {
+  const res = await fetch(`/api/super-admin/orgs/${orgId}/coaches`, {
+    method: "GET",
+    cache: "no-store",
+  })
+  const json = (await res.json()) as ApiResponse<CoachItem[]>
+  if (!json.ok) throw new Error(json.error)
+  return json.data
+}
+
 export function OrgDetailClient({ org }: { org: OrgDto }) {
   const router = useRouter()
   const [tab, setTab] = useState<TabKey>("admins")
 
   const [admins, setAdmins] = useState<AdminItem[]>([])
+  const [coaches, setCoaches] = useState<CoachItem[]>([])
   const [invites, setInvites] = useState<InviteItem[]>([])
   const [loadingAdmins, setLoadingAdmins] = useState(false)
+  const [loadingCoaches, setLoadingCoaches] = useState(false)
   const [loadingInvites, setLoadingInvites] = useState(false)
 
   const [editOrg, setEditOrg] = useState<OrgDto | null>(null)
@@ -92,10 +109,23 @@ export function OrgDetailClient({ org }: { org: OrgDto }) {
     }
   }, [org.id])
 
+  const refreshCoaches = useCallback(async () => {
+    setLoadingCoaches(true)
+    try {
+      const data = await apiGetCoaches(org.id)
+      setCoaches(data)
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to load coaches")
+    } finally {
+      setLoadingCoaches(false)
+    }
+  }, [org.id])
+
   useEffect(() => {
     refreshAdmins()
+    refreshCoaches()
     refreshInvites()
-  }, [refreshAdmins, refreshInvites])
+  }, [refreshAdmins, refreshCoaches, refreshInvites])
 
   const pendingInvites = useMemo(
     () => invites.filter((inv) => inv.status === "PENDING").length,
@@ -172,6 +202,7 @@ export function OrgDetailClient({ org }: { org: OrgDto }) {
         <div className="mb-3">
           <TabsList>
             <TabsTrigger value="admins">Admins</TabsTrigger>
+            <TabsTrigger value="coaches">Coaches</TabsTrigger>
             <TabsTrigger value="invitations" className="gap-2">
               Invitations
               {pendingInvites > 0 ? (
@@ -194,6 +225,15 @@ export function OrgDetailClient({ org }: { org: OrgDto }) {
               setInvitePrefill({ email, role: "admin" })
               setInviteDialogOpen(true)
             }}
+          />
+        </TabsContent>
+
+        <TabsContent value="coaches">
+          <CoachesTab
+            orgId={org.id}
+            coaches={coaches}
+            loading={loadingCoaches}
+            onRefresh={refreshCoaches}
           />
         </TabsContent>
 

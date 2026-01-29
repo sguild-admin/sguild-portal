@@ -65,7 +65,15 @@ export const superAdminRepo = {
         take: params.limit,
         skip: params.offset,
         include: {
-          _count: { select: { members: true } },
+          _count: {
+            select: {
+              members: {
+                where: {
+                  role: { notIn: ["admin", "owner"] },
+                },
+              },
+            },
+          },
         },
       }),
       prisma.organization.count({ where }),
@@ -77,7 +85,18 @@ export const superAdminRepo = {
   async getOrganizationById(orgId: string) {
     return prisma.organization.findUnique({
       where: { id: orgId },
-      include: { _count: { select: { members: true } } },
+      include: {
+        _count: {
+          select: {
+            members: {
+              where: {
+                role: { notIn: ["admin", "owner"] },
+              },
+            },
+          },
+        },
+        settings: true,
+      },
     })
   },
 
@@ -88,7 +107,18 @@ export const superAdminRepo = {
         ...(data.name ? { name: data.name } : {}),
         ...(data.slug ? { slug: data.slug } : {}),
       },
-      include: { _count: { select: { members: true } } },
+      include: {
+        _count: {
+          select: {
+            members: {
+              where: {
+                role: { notIn: ["admin", "owner"] },
+              },
+            },
+          },
+        },
+        settings: true,
+      },
     })
   },
 

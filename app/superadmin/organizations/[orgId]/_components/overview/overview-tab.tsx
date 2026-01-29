@@ -40,7 +40,7 @@ export function OverviewTab({
   pendingInvites,
   invitesCount,
 }: OverviewTabProps) {
-  const membersCount =
+  const coachesCount =
     typeof org._count?.members === "number" ? org._count.members : "—"
 
   return (
@@ -81,7 +81,7 @@ export function OverviewTab({
 
         <CardContent className="pt-0">
           <div className="grid grid-cols-2 gap-4">
-            <Stat label="Members" value={membersCount} />
+            <Stat label="Coaches" value={coachesCount} />
             <Stat label="Admins" value={adminsCount} />
             <Stat label="Pending invites" value={pendingInvites} />
             <Stat label="Total invites" value={invitesCount} />

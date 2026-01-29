@@ -35,6 +35,8 @@ export const superAdminSchemas = {
       .max(80)
       .regex(/^[a-z0-9-]+$/)
       .optional(),
+    timeZone: z.string().trim().min(1).max(100).optional(),
+    offersOceanLessons: z.boolean().optional(),
   }),
 
   listOrgs: z.object({

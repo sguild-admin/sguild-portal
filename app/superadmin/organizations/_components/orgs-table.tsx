@@ -27,6 +27,10 @@ export type OrgRow = {
   createdAt?: unknown
   updatedAt?: unknown
   _count?: { members: number }
+  settings?: {
+    timeZone: string
+    offersOceanLessons: boolean
+  } | null
 }
 
 type OrgCounts = {
@@ -67,7 +71,7 @@ export function OrgsTable({
         <div className="space-y-2">
           <div className="text-sm font-medium">No organizations yet</div>
           <div className="text-sm text-muted-foreground">
-            Create an organization to start managing members
+            Create an organization to start managing coaches
           </div>
         </div>
       </div>
@@ -144,7 +148,7 @@ export function OrgsTable({
 
                   <div className="mt-3 grid grid-cols-2 gap-3 text-xs text-muted-foreground">
                     <div className="rounded-md border border-border/60 px-2 py-2">
-                      <div className="text-[11px] uppercase tracking-wide">Members</div>
+                      <div className="text-[11px] uppercase tracking-wide">Coaches</div>
                       <div className="mt-1 text-sm font-semibold text-foreground">
                         {typeof org._count?.members === "number" ? org._count.members : "—"}
                       </div>
@@ -180,7 +184,7 @@ export function OrgsTable({
           <TableRow className="hover:bg-transparent">
             <TableHead>Organization</TableHead>
             <TableHead>Slug</TableHead>
-            <TableHead>Members</TableHead>
+            <TableHead>Coaches</TableHead>
             <TableHead>Admins</TableHead>
             <TableHead>Pending invites</TableHead>
             <TableHead>Created</TableHead>

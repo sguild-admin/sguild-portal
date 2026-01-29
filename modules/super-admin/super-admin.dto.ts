@@ -13,6 +13,10 @@ export type SuperAdminOrgDto = {
   logo?: string | null
   createdAt?: unknown
   _count?: { members: number }
+  settings?: {
+    timeZone: string
+    offersOceanLessons: boolean
+  } | null
 }
 
 export function toSuperAdminUserDto(u: any): SuperAdminUserDto {
@@ -33,5 +37,11 @@ export function toSuperAdminOrgDto(o: any): SuperAdminOrgDto {
     logo: o?.logo ?? null,
     createdAt: o?.createdAt,
     _count: o?._count ? { members: Number(o._count.members ?? 0) } : undefined,
+    settings: o?.settings
+      ? {
+          timeZone: String(o.settings.timeZone ?? "America/Chicago"),
+          offersOceanLessons: Boolean(o.settings.offersOceanLessons),
+        }
+      : null,
   }
 }

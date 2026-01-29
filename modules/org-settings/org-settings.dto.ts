@@ -5,6 +5,7 @@ export type OrgSettingsDto = {
   orgId: string
   timeZone: string
   currency: string
+  offersOceanLessons: boolean
 
   acuityEnabled: boolean
   acuityUserId: string | null
@@ -22,6 +23,7 @@ export function toOrgSettingsDto(s: OrgSettings): OrgSettingsDto {
     orgId: s.orgId,
     timeZone: s.timeZone,
     currency: s.currency,
+    offersOceanLessons: s.offersOceanLessons,
     acuityEnabled: s.acuityEnabled,
     acuityUserId: s.acuityUserId,
     hasAcuityApiKey: Boolean(s.acuityApiKey),

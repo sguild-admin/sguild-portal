@@ -26,6 +26,7 @@ export type OrganizationWithSettingsDto = OrganizationDto & {
   settings?: {
     timeZone: string
     currency: string
+    offersOceanLessons: boolean
     acuityEnabled: boolean
     acuityUserId: string | null
     hasAcuityApiKey: boolean

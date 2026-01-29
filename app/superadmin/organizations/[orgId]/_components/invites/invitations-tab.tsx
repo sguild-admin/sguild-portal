@@ -88,7 +88,7 @@ export function InvitationsTab({
   onInvitePrefillChange,
 }: {
   orgId: string
-  activeTab: "admins" | "invitations"
+  activeTab: "admins" | "coaches" | "invitations"
   invites: InviteItem[]
   loading: boolean
   onRefresh: () => Promise<void>
