@@ -85,7 +85,8 @@ function buildInviteUrl(token: string) {
 }
 
 function normalizeMemberRole(role: string): MemberRole {
-  if (role === "owner" || role === "admin" || role === "coach" || role === "member") return role
+  if (role === "owner" || role === "admin" || role === "member") return role
+  if (role === "coach") return "member"
   throw new AppError("BAD_REQUEST", "Invalid invite role")
 }
 
@@ -110,7 +111,7 @@ export const invitationsService = {
 
     if (existingUser) {
       const member = await prisma.member.findFirst({
-        where: { organizationId: input.orgId, userId: existingUser.id },
+        where: { orgId: input.orgId, userId: existingUser.id },
         select: { role: true },
       })
 

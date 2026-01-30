@@ -48,7 +48,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ orgId: string }
     if (userIds.length === 0) return ok([])
 
     const rows = await prisma.member.findMany({
-      where: { organizationId: orgId, userId: { in: userIds } },
+      where: { orgId, userId: { in: userIds } },
       include: { user: true },
       orderBy: { createdAt: "desc" },
     })

@@ -1,4 +1,4 @@
-import type { CoachAvailability, CoachProfile, User } from "@prisma/client"
+import type { CoachAvailability, CoachProfile, User, Weekday } from "@prisma/client"
 import type { CoachAvailabilityDto } from "@/modules/coach-availability/coach-availability.dto"
 
 export type CoachStatus = "ACTIVE" | "DISABLED"
@@ -25,6 +25,18 @@ export type CoachProfileDto = {
   }
 }
 
+const WEEKDAYS: Weekday[] = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"]
+
+function minutesToTime(value: number) {
+  const hours = Math.floor(value / 60)
+  const minutes = value % 60
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`
+}
+
+function weekdayToNumber(value: Weekday): number {
+  return WEEKDAYS.indexOf(value)
+}
+
 export function toCoachProfileDto(
   p: CoachProfile & { user?: User | null; availabilities?: CoachAvailability[] }
 ): CoachProfileDto {
@@ -41,9 +53,9 @@ export function toCoachProfileDto(
     phone: p.phone,
     availability: p.availabilities?.map((slot) => ({
       id: slot.id,
-      dayOfWeek: slot.dayOfWeek,
-      startTime: slot.startTime,
-      endTime: slot.endTime,
+      dayOfWeek: weekdayToNumber(slot.dayOfWeek),
+      startTime: minutesToTime(slot.startMin),
+      endTime: minutesToTime(slot.endMin),
     })),
     createdAt: p.createdAt,
     updatedAt: p.updatedAt,

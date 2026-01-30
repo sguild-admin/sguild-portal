@@ -24,21 +24,30 @@ CREATE TYPE "InvitationRole" AS ENUM ('owner', 'admin', 'coach');
 CREATE TYPE "Weekday" AS ENUM ('MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN');
 
 -- DropIndex
-DROP INDEX "coach_availability_coachProfileId_idx";
+DROP INDEX IF EXISTS "coach_availability_coachProfileId_idx";
 
 -- DropIndex
-DROP INDEX "coach_profile_orgId_idx";
+DROP INDEX IF EXISTS "coach_profile_orgId_idx";
 
 -- DropIndex
-DROP INDEX "member_organizationId_idx";
+DROP INDEX IF EXISTS "member_organizationId_idx";
 
 -- AlterTable
-ALTER TABLE "coach_availability" DROP COLUMN "endTime",
-DROP COLUMN "startTime",
-ADD COLUMN     "endMin" INTEGER NOT NULL,
-ADD COLUMN     "startMin" INTEGER NOT NULL,
-DROP COLUMN "dayOfWeek",
-ADD COLUMN     "dayOfWeek" "Weekday" NOT NULL;
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'coach_availability'
+  ) THEN
+    ALTER TABLE "coach_availability" DROP COLUMN "endTime",
+    DROP COLUMN "startTime",
+    ADD COLUMN     "endMin" INTEGER NOT NULL,
+    ADD COLUMN     "startMin" INTEGER NOT NULL,
+    DROP COLUMN "dayOfWeek",
+    ADD COLUMN     "dayOfWeek" "Weekday" NOT NULL;
+  END IF;
+END $$;
 
 -- AlterTable
 ALTER TABLE "invitation" DROP COLUMN "role",
@@ -55,7 +64,16 @@ ALTER TABLE "organization" DROP COLUMN "metadata",
 ADD COLUMN     "metadata" JSONB;
 
 -- CreateIndex
-CREATE INDEX "coach_availability_coachProfileId_dayOfWeek_idx" ON "coach_availability"("coachProfileId", "dayOfWeek");
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'coach_availability'
+  ) THEN
+    CREATE INDEX IF NOT EXISTS "coach_availability_coachProfileId_dayOfWeek_idx" ON "coach_availability"("coachProfileId", "dayOfWeek");
+  END IF;
+END $$;
 
 -- CreateIndex
 CREATE INDEX "coach_profile_orgId_status_idx" ON "coach_profile"("orgId", "status");

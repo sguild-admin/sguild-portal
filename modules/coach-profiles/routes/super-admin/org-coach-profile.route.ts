@@ -27,10 +27,10 @@ export async function GET(
 
     const member = await prisma.member.findUnique({
       where: { id: memberId },
-      select: { id: true, organizationId: true, userId: true },
+      select: { id: true, orgId: true, userId: true },
     })
 
-    if (!member || member.organizationId !== orgId) {
+    if (!member || member.orgId !== orgId) {
       throw new AppError("NOT_FOUND", "Coach not found")
     }
 
@@ -67,10 +67,10 @@ export async function PATCH(
 
     const member = await prisma.member.findUnique({
       where: { id: memberId },
-      select: { id: true, organizationId: true, userId: true },
+      select: { id: true, orgId: true, userId: true },
     })
 
-    if (!member || member.organizationId !== orgId) {
+    if (!member || member.orgId !== orgId) {
       throw new AppError("NOT_FOUND", "Coach not found")
     }
 

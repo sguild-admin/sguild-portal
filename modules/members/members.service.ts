@@ -1,9 +1,11 @@
 // modules/members/members.service.ts
 import { auth } from "@/lib/auth/auth"
 import { requireActiveOrgId, requireAdminOrOwner, requireSession } from "@/lib/auth/guards"
+import { prisma } from "@/lib/db/prisma"
+import type { CoachStatus } from "@prisma/client"
 
 type ListMembersInput = Partial<{
-  role: "owner" | "admin" | "coach" | "member"
+  role: "owner" | "admin" | "member"
   status: "active" | "disabled"
   limit: number
   offset: number
@@ -40,7 +42,7 @@ export const membersService = {
     return filtered
   },
 
-  async updateRole(headers: Headers, input: { memberId: string; role: "owner" | "admin" | "coach" | "member" }) {
+  async updateRole(headers: Headers, input: { memberId: string; role: "owner" | "admin" | "member" }) {
     await requireAdminOrOwner(headers)
     const orgId = await requireActiveOrgId(headers)
 
@@ -65,5 +67,28 @@ export const membersService = {
         memberIdOrEmail: input.memberIdOrEmail,
       } as any,
     })
+  },
+
+  async setCoachStatus(orgId: string, userId: string, coachStatus: CoachStatus) {
+    const member = await prisma.member.findFirst({ where: { orgId, userId } })
+    if (!member) throw new Error("Member not found")
+
+    await prisma.coachProfile.upsert({
+      where: { orgId_userId: { orgId, userId } },
+      create: { orgId, userId, status: coachStatus },
+      update: { status: coachStatus },
+    })
+
+    const updated = await prisma.member.findFirst({
+      where: { orgId, userId },
+      include: { coachProfile: true },
+    })
+    if (!updated) throw new Error("Member not found")
+    return updated
+  },
+
+  async deleteByMemberId(memberId: string, _reason?: string) {
+    await prisma.member.delete({ where: { id: memberId } })
+    return { id: memberId }
   },
 }

@@ -1,3 +1,4 @@
+import crypto from "crypto"
 import { prisma } from "@/lib/db/prisma"
 
 export const superAdminRepo = {
@@ -42,7 +43,7 @@ export const superAdminRepo = {
       await tx.member.create({
         data: {
           id: crypto.randomUUID(),
-          organizationId: org.id,
+          orgId: org.id,
           userId: args.ownerUserId,
           role: "owner",
           createdAt: now,

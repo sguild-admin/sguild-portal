@@ -4,7 +4,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  }
+}
 
 model OrgSettings {
   id                String       @id @default(uuid())
@@ -23,30 +23,24 @@ model OrgSettings {
 }
 
 model CoachProfile {
-  id             String              @id @default(cuid())
-  orgId          String
-  userId         String
-  status         CoachStatus         @default(ACTIVE)
-  nickname       String?
-  bio            String?
-  notes          String?
-  address        String?
-  zip            String?
-  phone          String?
-  createdAt      DateTime            @default(now())
-  updatedAt      DateTime            @updatedAt
+  id        String     @id @default(cuid())
+  memberId  String     @unique
+  status    CoachStatus @default(ACTIVE)
 
-  org            Organization        @relation(fields: [orgId], references: [id], onDelete: Cascade)
-  user           User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  nickname  String?
+  bio       String?
+  notes     String?
+  address   String?
+  zip       String?
+  phone     String?
 
-  // Enforce "coach implies member" using the composite unique on Member
-  member         Member              @relation("MemberCoachProfile", fields: [orgId, userId], references: [orgId, userId], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
+  member         Member              @relation(fields: [memberId], references: [id], onDelete: Cascade)
   availabilities CoachAvailability[]
 
-  @@unique([orgId, userId])
-  @@index([orgId, status])
-  @@index([userId])
+  @@index([status])
   @@map("coach_profile")
 }
 
@@ -95,7 +89,6 @@ model User {
   role          String?
 
   accounts      Account[]
-  coachProfiles CoachProfile[]
   invitations   Invitation[]
   members       Member[]
   sessions      Session[]
@@ -153,35 +146,36 @@ model Verification {
 }
 
 model Organization {
-  id            String         @id
-  name          String
-  slug          String         @unique
-  logo          String?
-  metadata      Json?
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  id          String       @id
+  name        String
+  slug        String       @unique
+  logo        String?
+  metadata    Json?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
 
-  coachProfiles CoachProfile[]
-  invitations   Invitation[]
-  members       Member[]
-  settings      OrgSettings?
+  invitations Invitation[]
+  members     Member[]
+  settings    OrgSettings?
 
   @@map("organization")
 }
 
 model Member {
-  id           String           @id @default(cuid())
-  orgId        String           @map("organizationId")
-  userId       String
-  role         OrgRole          @default(member)
-  status       MembershipStatus @default(ACTIVE)
+  id        String           @id @default(cuid())
+  orgId     String           @map("organizationId")
+  userId    String
+
+  role      OrgRole          @default(member)
+  status    MembershipStatus @default(ACTIVE)
+
   createdAt DateTime @default(now())
-  updatedAt DateTime @default(now()) @updatedAt
+  updatedAt DateTime @updatedAt
 
-  organization Organization     @relation(fields: [orgId], references: [id], onDelete: Cascade)
-  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  coachProfile CoachProfile?    @relation("MemberCoachProfile")
+  coachProfile CoachProfile?
 
   @@unique([orgId, userId])
   @@index([orgId, role, status])
@@ -226,11 +220,13 @@ enum OrgRole {
   owner
   admin
   member
+  coach
 }
 
 enum InvitationRole {
   owner
   admin
+  member
   coach
 }
 

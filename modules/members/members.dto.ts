@@ -1,6 +1,6 @@
-import type { Member, User } from "@prisma/client"
+import type { Member, OrgRole, User } from "@prisma/client"
 
-export type MemberRole = "owner" | "admin" | "coach" | "member"
+export type MemberRole = OrgRole
 
 export type MemberUserDto = {
   id: string
@@ -32,7 +32,7 @@ export function toMemberDto(
 ): MemberDto {
   return {
     id: m.id,
-    organizationId: m.organizationId,
+    organizationId: m.orgId,
     userId: m.userId,
     role: m.role,
     createdAt: m.createdAt,

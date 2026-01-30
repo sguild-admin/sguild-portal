@@ -1,10 +1,11 @@
 import { prisma } from "@/lib/db/prisma"
+import type { InvitationRole } from "@prisma/client"
 
 export const invitationsRepo = {
   findActivePendingByOrgEmailRole: async (args: {
     orgId: string
     email: string
-    role: string
+    role: InvitationRole
     now: Date
   }) => {
     return prisma.invitation.findFirst({
@@ -19,7 +20,7 @@ export const invitationsRepo = {
     })
   },
 
-  findPendingByOrgEmailRole: async (args: { orgId: string; email: string; role: string }) => {
+  findPendingByOrgEmailRole: async (args: { orgId: string; email: string; role: InvitationRole }) => {
     return prisma.invitation.findFirst({
       where: {
         organizationId: args.orgId,
@@ -35,7 +36,7 @@ export const invitationsRepo = {
   revokePendingByOrgEmailRoleNot: async (args: {
     orgId: string
     email: string
-    role: string
+    role: InvitationRole
     revokedAt: Date
   }) => {
     return prisma.invitation.updateMany({
@@ -53,7 +54,7 @@ export const invitationsRepo = {
   create: async (args: {
     orgId: string
     email: string
-    role: string
+    role: InvitationRole
     expiresAt: Date
     inviterId: string
     tokenHash: string

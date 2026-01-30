@@ -3,18 +3,19 @@ import { ok, fail } from "@/lib/http/response"
 import { AppError } from "@/lib/http/errors"
 import { prisma } from "@/lib/db/prisma"
 import { requireSuperAdmin } from "@/lib/auth/guards"
-import { MemberRoleSchema } from "../../members.schema"
+const AdminRoleSchema = z.enum(["owner", "admin"])
 
 const ParamsSchema = z.object({ orgId: z.string().min(1) })
 
 const CreateAdminSchema = z.object({
   email: z.string().email(),
-  role: MemberRoleSchema.default("admin"),
+  role: AdminRoleSchema.default("admin"),
 })
 
 type AdminDto = {
   id: string
   role: string
+  status: "ACTIVE" | "DISABLED"
   createdAt: Date
   user: { id: string; name: string | null; email: string | null }
 }
@@ -22,12 +23,14 @@ type AdminDto = {
 function toAdminDto(member: {
   id: string
   role: string
+  status: "ACTIVE" | "DISABLED"
   createdAt: Date
   user: { id: string; name: string | null; email: string | null }
 }): AdminDto {
   return {
     id: member.id,
     role: member.role,
+    status: member.status,
     createdAt: member.createdAt,
     user: {
       id: member.user.id,
@@ -45,7 +48,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ orgId: string }
 
     const rows = await prisma.member.findMany({
       where: {
-        organizationId: orgId,
+        orgId,
         role: { in: ["admin", "owner"] },
       },
       include: { user: true },
@@ -74,14 +77,14 @@ export async function POST(req: Request, ctx: { params: Promise<{ orgId: string 
     if (!user) throw new AppError("NOT_FOUND", "User not found for email")
 
     const existing = await prisma.member.findFirst({
-      where: { organizationId: orgId, userId: user.id },
+      where: { orgId, userId: user.id },
       include: { user: true },
     })
 
     if (existing) {
       const updated = await prisma.member.update({
         where: { id: existing.id },
-        data: { role: input.role },
+        data: { role: input.role, status: "ACTIVE" },
         include: { user: true },
       })
       return ok(toAdminDto(updated))
@@ -89,9 +92,10 @@ export async function POST(req: Request, ctx: { params: Promise<{ orgId: string 
 
     const created = await prisma.member.create({
       data: {
-        organizationId: orgId,
+        orgId,
         userId: user.id,
         role: input.role,
+        status: "ACTIVE",
         createdAt: new Date(),
       },
       include: { user: true },

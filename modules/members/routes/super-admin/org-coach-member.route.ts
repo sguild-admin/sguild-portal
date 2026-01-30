@@ -3,68 +3,52 @@ import { ok, fail } from "@/lib/http/response"
 import { AppError } from "@/lib/http/errors"
 import { prisma } from "@/lib/db/prisma"
 import { requireSuperAdmin } from "@/lib/auth/guards"
-import { MemberRoleSchema } from "../../members.schema"
+import { CoachStatus } from "@prisma/client"
+import { membersService } from "../../members.service"
 
 const ParamsSchema = z.object({ orgId: z.string().min(1), memberId: z.string().min(1) })
 
-const UpdateRoleSchema = z.object({
-  role: MemberRoleSchema,
+const UpdateCoachSchema = z.object({
+  coachStatus: z.nativeEnum(CoachStatus),
 })
-
-function toAdminDto(member: {
-  id: string
-  role: string
-  createdAt: Date
-  user: { id: string; name: string | null; email: string | null }
-}) {
-  return {
-    id: member.id,
-    role: member.role,
-    createdAt: member.createdAt,
-    user: {
-      id: member.user.id,
-      name: member.user.name ?? null,
-      email: member.user.email ?? null,
-    },
-  }
-}
 
 export async function PATCH(
   req: Request,
   ctx: { params: Promise<{ orgId: string; memberId: string }> }
 ) {
   try {
-    await requireSuperAdmin(req.headers)
+    const { session } = await requireSuperAdmin(req.headers)
     const params = await ctx.params
     const { orgId, memberId } = ParamsSchema.parse(params)
     const body = await req.json()
-    const input = UpdateRoleSchema.parse(body)
+    const input = UpdateCoachSchema.parse(body)
+
+    if (!session?.userId) throw new AppError("UNAUTHENTICATED")
 
     const member = await prisma.member.findUnique({
       where: { id: memberId },
-      include: { user: true },
+      include: { coachProfile: { select: { status: true } } },
     })
 
     if (!member || member.orgId !== orgId) {
       throw new AppError("NOT_FOUND", "Member not found")
     }
 
-    if (member.role === "owner" && input.role !== "owner") {
-      const ownerCount = await prisma.member.count({
-        where: { orgId, role: "owner" },
-      })
-      if (ownerCount <= 1) {
-        throw new AppError("BAD_REQUEST", "Organization must have an owner")
-      }
+    const updated = await membersService.setCoachStatus(
+      orgId,
+      member.userId,
+      input.coachStatus
+    )
+
+    if (!updated) {
+      throw new AppError("NOT_FOUND", "Member not found")
     }
 
-    const updated = await prisma.member.update({
-      where: { id: memberId },
-      data: { role: input.role },
-      include: { user: true },
+    return ok({
+      id: memberId,
+      memberStatus: updated.status,
+      coachStatus: updated.coachProfile?.status ?? null,
     })
-
-    return ok(toAdminDto(updated))
   } catch (e: any) {
     return fail(e)
   }
@@ -75,13 +59,16 @@ export async function DELETE(
   ctx: { params: Promise<{ orgId: string; memberId: string }> }
 ) {
   try {
-    await requireSuperAdmin(req.headers)
+    const { session } = await requireSuperAdmin(req.headers)
     const params = await ctx.params
     const { orgId, memberId } = ParamsSchema.parse(params)
+    const body = await req.json().catch(() => ({}))
+    const reason = z.object({ reason: z.string().min(1).optional() }).parse(body).reason
+
+    if (!session?.userId) throw new AppError("UNAUTHENTICATED")
 
     const member = await prisma.member.findUnique({
       where: { id: memberId },
-      include: { user: true },
     })
 
     if (!member || member.orgId !== orgId) {
@@ -97,9 +84,9 @@ export async function DELETE(
       }
     }
 
-    await prisma.member.delete({ where: { id: memberId } })
+    const result = await membersService.deleteByMemberId(memberId, reason)
 
-    return ok({ id: memberId })
+    return ok(result)
   } catch (e: any) {
     return fail(e)
   }

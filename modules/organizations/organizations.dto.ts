@@ -1,11 +1,11 @@
-import type { Organization } from "@prisma/client"
+import type { Organization, Prisma } from "@prisma/client"
 
 export type OrganizationDto = {
   id: string
   name: string
   slug: string
   logo: string | null
-  metadata: string | null
+  metadata: Prisma.JsonValue | null
   createdAt: Date
   updatedAt: Date
 }

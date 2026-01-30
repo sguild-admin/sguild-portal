@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db/prisma"
+import type { OrgRole } from "@prisma/client"
 
-export type MemberRole = "owner" | "admin" | "coach" | "member"
+export type MemberRole = OrgRole
 
 export const membersRepo = {
   getById(memberId: string) {
@@ -12,13 +13,13 @@ export const membersRepo = {
 
   getByUserAndOrg(userId: string, orgId: string) {
     return prisma.member.findFirst({
-      where: { userId, organizationId: orgId },
+      where: { userId, orgId },
     })
   },
 
   listByOrg(orgId: string) {
     return prisma.member.findMany({
-      where: { organizationId: orgId },
+      where: { orgId },
       include: { user: true },
       orderBy: { createdAt: "desc" },
     })
@@ -26,7 +27,7 @@ export const membersRepo = {
 
   listByOrgAndRole(orgId: string, role: MemberRole) {
     return prisma.member.findMany({
-      where: { organizationId: orgId, role },
+      where: { orgId, role },
       include: { user: true },
       orderBy: { createdAt: "desc" },
     })
@@ -40,7 +41,7 @@ export const membersRepo = {
   },
   create(userId: string, orgId: string, role: MemberRole) {
     return prisma.member.create({
-      data: { userId, organizationId: orgId, role, createdAt: new Date() },
+      data: { userId, orgId, role, createdAt: new Date() },
     })
   },
 
@@ -52,16 +53,16 @@ export const membersRepo = {
 
   updateRoleByUserAndOrg(userId: string, orgId: string, role: MemberRole) {
     return prisma.member.updateMany({
-      where: { userId, organizationId: orgId },
+      where: { userId, orgId },
       data: { role },
     })
   },
 
   upsertByUserAndOrg(userId: string, orgId: string, role: MemberRole) {
     return prisma.member.upsert({
-      where: { organizationId_userId: { organizationId: orgId, userId } },
+      where: { orgId_userId: { orgId, userId } },
       update: { role },
-      create: { userId, organizationId: orgId, role, createdAt: new Date() },
+      create: { userId, orgId, role, createdAt: new Date() },
     })
   },
 }

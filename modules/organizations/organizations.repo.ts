@@ -1,12 +1,13 @@
 // modules/organizations/organizations.repo.ts
 import { prisma } from "@/lib/db/prisma"
-import type { Organization, Prisma } from "@prisma/client"
+import { Prisma } from "@prisma/client"
+import type { Organization } from "@prisma/client"
 
 export type OrganizationUpdateInput = {
   name?: string
   slug?: string
   logo?: string | null
-  metadata?: string | null
+  metadata?: Prisma.InputJsonValue | null
 }
 
 export const organizationsRepo = {
@@ -55,7 +56,9 @@ export const organizationsRepo = {
         ...(input.name !== undefined ? { name: input.name } : {}),
         ...(input.slug !== undefined ? { slug: input.slug } : {}),
         ...(input.logo !== undefined ? { logo: input.logo } : {}),
-        ...(input.metadata !== undefined ? { metadata: input.metadata } : {}),
+        ...(input.metadata !== undefined
+          ? { metadata: input.metadata === null ? Prisma.JsonNull : input.metadata }
+          : {}),
       },
     })
   },
