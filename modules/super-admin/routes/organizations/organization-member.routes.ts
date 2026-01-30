@@ -3,31 +3,14 @@ import { ok, fail } from "@/lib/http/response"
 import { AppError } from "@/lib/http/errors"
 import { prisma } from "@/lib/db/prisma"
 import { requireSuperAdmin } from "@/lib/auth/guards"
-import { MemberRoleSchema } from "../../members.schema"
+import { toSuperAdminOrgMemberDto } from "@/modules/super-admin/super-admin.dto"
 
 const ParamsSchema = z.object({ orgId: z.string().min(1), memberId: z.string().min(1) })
 
-const UpdateRoleSchema = z.object({
-  role: MemberRoleSchema,
+const UpdateStatusSchema = z.object({
+  status: z.enum(["ACTIVE", "DISABLED"]),
+  disabledReason: z.string().min(1).optional(),
 })
-
-function toAdminDto(member: {
-  id: string
-  role: string
-  createdAt: Date
-  user: { id: string; name: string | null; email: string | null }
-}) {
-  return {
-    id: member.id,
-    role: member.role,
-    createdAt: member.createdAt,
-    user: {
-      id: member.user.id,
-      name: member.user.name ?? null,
-      email: member.user.email ?? null,
-    },
-  }
-}
 
 export async function PATCH(
   req: Request,
@@ -38,32 +21,32 @@ export async function PATCH(
     const params = await ctx.params
     const { orgId, memberId } = ParamsSchema.parse(params)
     const body = await req.json()
-    const input = UpdateRoleSchema.parse(body)
+    const input = UpdateStatusSchema.parse(body)
 
     const member = await prisma.member.findUnique({
       where: { id: memberId },
-      include: { user: true },
+      include: { user: true, coachProfile: { select: { id: true } } },
     })
 
     if (!member || member.orgId !== orgId) {
       throw new AppError("NOT_FOUND", "Member not found")
     }
 
-    if (member.role === "owner") {
-      throw new AppError("BAD_REQUEST", "Owner role is immutable")
-    }
-
-    if (input.role === "owner") {
-      throw new AppError("BAD_REQUEST", "Cannot promote to owner")
+    if (member.role === "owner" && input.status === "DISABLED") {
+      throw new AppError("BAD_REQUEST", "Owner membership cannot be disabled")
     }
 
     const updated = await prisma.member.update({
       where: { id: memberId },
-      data: { role: input.role },
-      include: { user: true },
+      data: {
+        status: input.status,
+        disabledAt: input.status === "DISABLED" ? new Date() : null,
+        disabledReason: input.status === "DISABLED" ? input.disabledReason ?? null : null,
+      },
+      include: { user: true, coachProfile: { select: { id: true } } },
     })
 
-    return ok(toAdminDto(updated))
+    return ok(toSuperAdminOrgMemberDto(updated))
   } catch (e: any) {
     return fail(e)
   }
@@ -80,7 +63,6 @@ export async function DELETE(
 
     const member = await prisma.member.findUnique({
       where: { id: memberId },
-      include: { user: true },
     })
 
     if (!member || member.orgId !== orgId) {
@@ -92,7 +74,6 @@ export async function DELETE(
     }
 
     await prisma.member.delete({ where: { id: memberId } })
-
     return ok({ id: memberId })
   } catch (e: any) {
     return fail(e)

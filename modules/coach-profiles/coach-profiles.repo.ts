@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db/prisma"
-import type { CoachStatus } from "@prisma/client"
+import { AppError } from "@/lib/http/errors"
+import type { CoachStatus } from "./coach-profiles.schema"
 
 export type CoachProfileUpsert = Partial<{
   nickname: string | null
@@ -14,52 +15,79 @@ export const coachProfilesRepo = {
   getById(id: string) {
     return prisma.coachProfile.findUnique({
       where: { id },
-      include: { user: true, org: true },
+      include: { member: { include: { user: true } }, availabilities: true },
     })
   },
 
-  getByUserAndOrg(userId: string, orgId: string) {
-    return prisma.coachProfile.findUnique({
-      where: { orgId_userId: { orgId, userId } },
+  getByUserAndOrg(orgId: string, userId: string) {
+    return prisma.coachProfile.findFirst({
+      where: { member: { orgId, userId } },
+      include: { member: { include: { user: true } }, availabilities: true },
     })
   },
 
   listByOrg(orgId: string) {
     return prisma.coachProfile.findMany({
-      where: { orgId },
-      include: { user: true },
+      where: { member: { orgId } },
+      include: { member: { include: { user: true } }, availabilities: true },
       orderBy: { createdAt: "desc" },
     })
   },
 
   async ensure(orgId: string, userId: string) {
-    const existing = await prisma.coachProfile.findUnique({
-      where: { orgId_userId: { orgId, userId } },
+    const existing = await prisma.coachProfile.findFirst({
+      where: { member: { orgId, userId } },
+      include: { member: { include: { user: true } }, availabilities: true },
     })
     if (existing) return existing
 
+    const member = await prisma.member.findFirst({ where: { orgId, userId } })
+    if (!member) throw new Error("Member not found")
+
     return prisma.coachProfile.create({
-      data: { orgId, userId },
+      data: { memberId: member.id },
+      include: { member: { include: { user: true } }, availabilities: true },
     })
   },
 
-  upsert(orgId: string, userId: string, data: CoachProfileUpsert) {
+  async upsert(orgId: string, userId: string, data: CoachProfileUpsert) {
+    const member = await prisma.member.findFirst({ where: { orgId, userId } })
+    if (!member) throw new Error("Member not found")
+
     return prisma.coachProfile.upsert({
-      where: { orgId_userId: { orgId, userId } },
+      where: { memberId: member.id },
       create: {
-        orgId,
-        userId,
-        status: "ACTIVE",
+        memberId: member.id,
         ...data,
       },
       update: data,
+      include: { member: { include: { user: true } }, availabilities: true },
     })
   },
 
-  setStatus(orgId: string, userId: string, status: CoachStatus) {
-    return prisma.coachProfile.update({
-      where: { orgId_userId: { orgId, userId } },
+  async setStatus(orgId: string, userId: string, status: CoachStatus) {
+    const member = await prisma.member.findFirst({ where: { orgId, userId } })
+    if (!member) throw new Error("Member not found")
+
+    if (member.role === "owner" && status === "DISABLED") {
+      throw new AppError("BAD_REQUEST", "Owner membership cannot be disabled")
+    }
+
+    await prisma.member.update({
+      where: { id: member.id },
       data: { status },
+    })
+
+    const existing = await prisma.coachProfile.findUnique({
+      where: { memberId: member.id },
+      include: { member: { include: { user: true } }, availabilities: true },
+    })
+
+    if (existing) return existing
+
+    return prisma.coachProfile.create({
+      data: { memberId: member.id },
+      include: { member: { include: { user: true } }, availabilities: true },
     })
   },
 }

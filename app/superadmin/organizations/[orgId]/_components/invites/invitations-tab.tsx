@@ -114,13 +114,13 @@ export function InvitationsTab({
   onInvitePrefillChange,
 }: {
   orgId: string
-  activeTab: "admins" | "coaches" | "invitations"
+  activeTab: "overview" | "team" | "invitations" | "settings"
   invites: InviteItem[]
   loading: boolean
   onRefresh: () => Promise<void>
   onInviteUrl: (url: string) => void
   onInviteDialogOpenChange: (open: boolean) => void
-  onInvitePrefillChange: (prefill: { email: string; role: "admin" | "owner" | "coach" } | null) => void
+  onInvitePrefillChange: (prefill: { email: string; role: "admin" | "coach" } | null) => void
 }) {
   const [submittingInviteId, setSubmittingInviteId] = useState<string | null>(null)
   const [revokeInviteId, setRevokeInviteId] = useState<string | null>(null)
@@ -247,7 +247,7 @@ export function InvitationsTab({
                 onInviteDialogOpenChange(true)
               }}
             >
-              Create invite
+              Create Invite
             </Button>
           </div>
         </CardHeader>
@@ -263,20 +263,26 @@ export function InvitationsTab({
               {filterOptions.map((option) => (
                 <ToggleGroupItem key={option.value} value={option.value}>
                   {option.label}
-                  <span className="tabular-nums text-muted-foreground">{option.count}</span>
+                  <span
+                    className={`tabular-nums text-muted-foreground ${
+                      option.value === "all" ? "" : "hidden lg:inline"
+                    }`}
+                  >
+                    {option.count}
+                  </span>
                 </ToggleGroupItem>
               ))}
             </ToggleGroup>
           </div>
           {loading ? (
-            <div className="flex min-h-[200px] items-center px-6 py-10">
+            <div className="flex min-h-50 items-center px-6 py-10">
               <div className="space-y-2">
                 <div className="text-sm font-medium">Loading invites...</div>
                 <div className="text-xs text-muted-foreground">Fetching invitation status.</div>
               </div>
             </div>
           ) : rows.length === 0 ? (
-            <div className="flex min-h-[200px] items-center justify-center px-6 py-10">
+            <div className="flex min-h-50 items-center justify-center px-6 py-10">
               <div className="rounded-lg border border-border/60 bg-muted/20 p-8 text-center">
                 <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-md bg-background shadow-sm">
                   <MailPlus className="h-5 w-5 text-muted-foreground" />
@@ -291,8 +297,8 @@ export function InvitationsTab({
             </div>
           ) : (
             <>
-              <div className="lg:hidden">
-                <div className="divide-y divide-border">
+              <div className="lg:hidden bg-card">
+                <div className="divide-y divide-border bg-card">
                   {pagedRows.map((inv) => {
                     const busy = submittingInviteId === inv.id
                     const roleLabel = inv.role
@@ -312,7 +318,7 @@ export function InvitationsTab({
                             : "border bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-950/40 dark:text-slate-200 dark:border-slate-800/60"
 
                     return (
-                      <div key={inv.id} className="p-4">
+                      <div key={inv.id} className="bg-card p-4">
                         <div className="flex items-start justify-between gap-3">
                           <div className="space-y-2">
                             <div className="text-sm font-medium text-foreground">{inv.email}</div>
@@ -362,7 +368,7 @@ export function InvitationsTab({
                                 {inv.status === "REVOKED" ? (
                                   <DropdownMenuItem
                                     onClick={() => {
-                                      const role = inv.role === "owner" ? "owner" : "admin"
+                                      const role = inv.role === "coach" ? "coach" : "admin"
                                       onInvitePrefillChange({ email: inv.email, role })
                                       onInviteDialogOpenChange(true)
                                     }}
@@ -396,7 +402,7 @@ export function InvitationsTab({
               </div>
 
               <TableSurface stickyHeader className="border-0 shadow-none">
-                <Table className="hidden min-w-[900px] lg:table">
+                <Table className="hidden min-w-225 lg:table">
                   <TableHeader className="bg-muted/40">
                     <TableRow className="hover:bg-transparent border-b border-border/60">
                       <TableHead className="text-xs">Email</TableHead>
@@ -483,7 +489,7 @@ export function InvitationsTab({
                                     {inv.status === "REVOKED" ? (
                                       <DropdownMenuItem
                                         onClick={() => {
-                                          const role = inv.role === "owner" ? "owner" : "admin"
+                                          const role = inv.role === "coach" ? "coach" : "admin"
                                           onInvitePrefillChange({ email: inv.email, role })
                                           onInviteDialogOpenChange(true)
                                         }}

@@ -24,14 +24,17 @@ type OrgListPayload = {
 }
 
 async function apiGetOrgs(): Promise<OrgListPayload> {
-  const res = await fetch("/api/super-admin/orgs", { method: "GET", cache: "no-store" })
+  const res = await fetch("/api/super-admin/organizations", {
+    method: "GET",
+    cache: "no-store",
+  })
   const json = (await res.json()) as ApiResponse<OrgListPayload>
   if (!json.ok) throw json.error
   return json.data
 }
 
 async function apiDeleteOrg(orgId: string) {
-  const res = await fetch(`/api/super-admin/orgs/${orgId}`, { method: "DELETE" })
+  const res = await fetch(`/api/super-admin/organizations/${orgId}`, { method: "DELETE" })
   const json = (await res.json()) as ApiResponse<{ id: string }>
   if (!json.ok) throw json.error
   return json.data
@@ -43,7 +46,7 @@ type OrgCounts = {
 }
 
 async function apiGetAdminsCount(orgId: string): Promise<number> {
-  const res = await fetch(`/api/super-admin/orgs/${orgId}/admins`, {
+  const res = await fetch(`/api/super-admin/organizations/${orgId}/admins`, {
     method: "GET",
     cache: "no-store",
   })
@@ -53,7 +56,7 @@ async function apiGetAdminsCount(orgId: string): Promise<number> {
 }
 
 async function apiGetPendingInvitesCount(orgId: string): Promise<number> {
-  const res = await fetch(`/api/super-admin/orgs/${orgId}/invitations`, {
+  const res = await fetch(`/api/super-admin/organizations/${orgId}/invitations`, {
     method: "GET",
     cache: "no-store",
   })

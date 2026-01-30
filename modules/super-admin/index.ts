@@ -14,6 +14,8 @@ export {
 export {
   toSuperAdminUserDto,
   toSuperAdminOrgDto,
+  toSuperAdminOrgMemberDto,
   type SuperAdminUserDto,
   type SuperAdminOrgDto,
+  type SuperAdminOrgMemberDto,
 } from "./super-admin.dto"

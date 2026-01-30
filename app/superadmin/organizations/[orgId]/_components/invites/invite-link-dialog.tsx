@@ -41,6 +41,7 @@ export function InviteLinkDialog({
             onClick={async () => {
               if (!inviteUrl) return
               await navigator.clipboard.writeText(inviteUrl)
+              onOpenChange(false)
             }}
             type="button"
           >

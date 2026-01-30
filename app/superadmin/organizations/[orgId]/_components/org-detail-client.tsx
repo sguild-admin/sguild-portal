@@ -9,8 +9,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { ConfirmDeleteDialog } from "@/app/superadmin/_components/confirm-delete-dialog"
 import { SuperAdminBreadcrumbs } from "@/app/superadmin/_components/superadmin-breadcrumbs"
 import { OrgDialogs } from "@/app/superadmin/organizations/_components/orgs-dialogs"
-import { AdminsTab, type AdminItem } from "@/app/superadmin/organizations/[orgId]/_components/admins/admins-tab"
-import { CoachesTab, type CoachItem } from "@/app/superadmin/organizations/[orgId]/_components/coaches/coaches-tab"
+import { OverviewTab } from "@/app/superadmin/organizations/[orgId]/_components/overview/overview-tab"
+import { TeamTab } from "@/app/superadmin/organizations/[orgId]/_components/team-tab"
 import { InvitationsTab, type InviteItem } from "@/app/superadmin/organizations/[orgId]/_components/invites/invitations-tab"
 import { InviteDialog } from "@/app/superadmin/organizations/[orgId]/_components/invites/invite-dialog"
 import { InviteLinkDialog } from "@/app/superadmin/organizations/[orgId]/_components/invites/invite-link-dialog"
@@ -33,39 +33,19 @@ type ApiOk<T> = { ok: true; data: T }
 type ApiFail = { ok: false; error: string; code?: string }
 type ApiResponse<T> = ApiOk<T> | ApiFail
 
-type TabKey = "admins" | "coaches" | "invitations"
+type TabKey = "overview" | "team" | "invitations"
 
 type InvitePrefill = {
   email: string
-  role: "admin" | "owner" | "coach"
-}
-
-async function apiGetAdmins(orgId: string): Promise<AdminItem[]> {
-  const res = await fetch(`/api/super-admin/orgs/${orgId}/admins`, {
-    method: "GET",
-    cache: "no-store",
-  })
-  const json = (await res.json()) as ApiResponse<AdminItem[]>
-  if (!json.ok) throw new Error(json.error)
-  return json.data
+  role: "admin" | "coach"
 }
 
 async function apiGetInvites(orgId: string): Promise<InviteItem[]> {
-  const res = await fetch(`/api/super-admin/orgs/${orgId}/invitations`, {
+  const res = await fetch(`/api/super-admin/organizations/${orgId}/invitations`, {
     method: "GET",
     cache: "no-store",
   })
   const json = (await res.json()) as ApiResponse<InviteItem[]>
-  if (!json.ok) throw new Error(json.error)
-  return json.data
-}
-
-async function apiGetCoaches(orgId: string): Promise<CoachItem[]> {
-  const res = await fetch(`/api/super-admin/orgs/${orgId}/coaches`, {
-    method: "GET",
-    cache: "no-store",
-  })
-  const json = (await res.json()) as ApiResponse<CoachItem[]>
   if (!json.ok) throw new Error(json.error)
   return json.data
 }
@@ -76,37 +56,22 @@ export function OrgDetailClient({ org }: { org: OrgDto }) {
 
   const tabFromUrl = useMemo(() => {
     const value = searchParams.get("tab")
-    if (value === "admins" || value === "coaches" || value === "invitations") return value
+    if (value === "overview" || value === "team" || value === "invitations") {
+      return value
+    }
     return null
   }, [searchParams])
 
-  const [tab, setTab] = useState<TabKey>(tabFromUrl ?? "admins")
+  const [tab, setTab] = useState<TabKey>(tabFromUrl ?? "overview")
 
-  const [admins, setAdmins] = useState<AdminItem[]>([])
-  const [coaches, setCoaches] = useState<CoachItem[]>([])
   const [invites, setInvites] = useState<InviteItem[]>([])
-  const [loadingAdmins, setLoadingAdmins] = useState(false)
-  const [loadingCoaches, setLoadingCoaches] = useState(false)
   const [loadingInvites, setLoadingInvites] = useState(false)
-
   const [editOrg, setEditOrg] = useState<OrgDto | null>(null)
   const [deletingOrg, setDeletingOrg] = useState(false)
 
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false)
   const [invitePrefill, setInvitePrefill] = useState<InvitePrefill | null>(null)
   const [inviteUrl, setInviteUrl] = useState<string | null>(null)
-
-  const refreshAdmins = useCallback(async () => {
-    setLoadingAdmins(true)
-    try {
-      const data = await apiGetAdmins(org.id)
-      setAdmins(data)
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to load admins")
-    } finally {
-      setLoadingAdmins(false)
-    }
-  }, [org.id])
 
   const refreshInvites = useCallback(async () => {
     setLoadingInvites(true)
@@ -120,24 +85,10 @@ export function OrgDetailClient({ org }: { org: OrgDto }) {
     }
   }, [org.id])
 
-  const refreshCoaches = useCallback(async () => {
-    setLoadingCoaches(true)
-    try {
-      const data = await apiGetCoaches(org.id)
-      setCoaches(data)
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to load coaches")
-    } finally {
-      setLoadingCoaches(false)
-    }
-  }, [org.id])
-
   useEffect(() => {
     if (tabFromUrl && tabFromUrl !== tab) setTab(tabFromUrl)
-    refreshAdmins()
-    refreshCoaches()
     refreshInvites()
-  }, [refreshAdmins, refreshCoaches, refreshInvites, tabFromUrl, tab])
+  }, [refreshInvites, tabFromUrl, tab])
 
   const pendingInvites = useMemo(
     () => invites.filter((inv) => inv.status === "PENDING").length,
@@ -147,7 +98,7 @@ export function OrgDetailClient({ org }: { org: OrgDto }) {
   async function onDeleteOrg() {
     setDeletingOrg(true)
     try {
-      await fetch(`/api/super-admin/orgs/${org.id}`, { method: "DELETE" })
+      await fetch(`/api/super-admin/organizations/${org.id}`, { method: "DELETE" })
       router.replace("/superadmin/organizations")
       router.refresh()
     } catch {
@@ -227,8 +178,8 @@ export function OrgDetailClient({ org }: { org: OrgDto }) {
       <Tabs value={tab} onValueChange={(value) => setTab(value as TabKey)}>
         <div className="mb-3">
           <TabsList>
-            <TabsTrigger value="admins">Admins</TabsTrigger>
-            <TabsTrigger value="coaches">Coaches</TabsTrigger>
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="team">Team</TabsTrigger>
             <TabsTrigger value="invitations" className="gap-2">
               Invitations
               {pendingInvites > 0 ? (
@@ -240,23 +191,15 @@ export function OrgDetailClient({ org }: { org: OrgDto }) {
           </TabsList>
         </div>
 
-        <TabsContent value="admins">
-          <AdminsTab
-            orgId={org.id}
-            admins={admins}
-            loading={loadingAdmins}
-            onRefresh={refreshAdmins}
-          />
+        <TabsContent value="overview">
+          <OverviewTab org={org} />
         </TabsContent>
 
-        <TabsContent value="coaches">
-          <CoachesTab
+        <TabsContent value="team">
+          <TeamTab
             orgId={org.id}
-            coaches={coaches}
-            loading={loadingCoaches}
-            onRefresh={refreshCoaches}
-            onInviteRequested={(email: string) => {
-              setInvitePrefill({ email, role: "coach" })
+            onInvite={(role) => {
+              setInvitePrefill(role ? { email: "", role } : null)
               setInviteDialogOpen(true)
             }}
           />
@@ -277,6 +220,7 @@ export function OrgDetailClient({ org }: { org: OrgDto }) {
             onInvitePrefillChange={setInvitePrefill}
           />
         </TabsContent>
+
       </Tabs>
 
       <InviteDialog

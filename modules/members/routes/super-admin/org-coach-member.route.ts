@@ -3,13 +3,13 @@ import { ok, fail } from "@/lib/http/response"
 import { AppError } from "@/lib/http/errors"
 import { prisma } from "@/lib/db/prisma"
 import { requireSuperAdmin } from "@/lib/auth/guards"
-import { CoachStatus } from "@prisma/client"
+import { CoachStatusSchema } from "@/modules/coach-profiles/coach-profiles.schema"
 import { membersService } from "../../members.service"
 
 const ParamsSchema = z.object({ orgId: z.string().min(1), memberId: z.string().min(1) })
 
 const UpdateCoachSchema = z.object({
-  coachStatus: z.nativeEnum(CoachStatus),
+  coachStatus: CoachStatusSchema,
 })
 
 export async function PATCH(
@@ -27,11 +27,15 @@ export async function PATCH(
 
     const member = await prisma.member.findUnique({
       where: { id: memberId },
-      include: { coachProfile: { select: { status: true } } },
+      include: { coachProfile: { select: { id: true } } },
     })
 
     if (!member || member.orgId !== orgId) {
       throw new AppError("NOT_FOUND", "Member not found")
+    }
+
+    if (member.role === "owner") {
+      throw new AppError("BAD_REQUEST", "Owner membership cannot be disabled")
     }
 
     const updated = await membersService.setCoachStatus(
@@ -47,7 +51,7 @@ export async function PATCH(
     return ok({
       id: memberId,
       memberStatus: updated.status,
-      coachStatus: updated.coachProfile?.status ?? null,
+      coachStatus: updated.coachProfile ? updated.status : null,
     })
   } catch (e: any) {
     return fail(e)
@@ -76,12 +80,7 @@ export async function DELETE(
     }
 
     if (member.role === "owner") {
-      const ownerCount = await prisma.member.count({
-        where: { orgId, role: "owner" },
-      })
-      if (ownerCount <= 1) {
-        throw new AppError("BAD_REQUEST", "Organization must have an owner")
-      }
+      throw new AppError("BAD_REQUEST", "Owner membership cannot be removed")
     }
 
     const result = await membersService.deleteByMemberId(memberId, reason)

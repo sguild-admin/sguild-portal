@@ -7,25 +7,24 @@ datasource db {
 }
 
 model OrgSettings {
-  id                String       @id @default(uuid())
-  orgId             String       @unique
-  timeZone          String       @default("America/Chicago")
-  currency          String       @default("USD")
-  offersOceanLessons Boolean     @default(false)
-  acuityEnabled     Boolean      @default(false)
-  acuityUserId      String?
-  acuityApiKey      String?
-  createdAt         DateTime     @default(now())
-  updatedAt         DateTime     @updatedAt
-  org               Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  id                 String       @id @default(uuid())
+  orgId              String       @unique
+  timeZone           String       @default("America/Chicago")
+  currency           String       @default("USD")
+  offersOceanLessons Boolean      @default(false)
+  acuityEnabled      Boolean      @default(false)
+  acuityUserId       String?
+  acuityApiKey       String?
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+  org                Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
 
   @@map("org_settings")
 }
 
 model CoachProfile {
-  id        String     @id @default(cuid())
-  memberId  String     @unique
-  status    CoachStatus @default(ACTIVE)
+  id        String @id @default(cuid())
+  memberId  String @unique
 
   nickname  String?
   bio       String?
@@ -40,7 +39,6 @@ model CoachProfile {
   member         Member              @relation(fields: [memberId], references: [id], onDelete: Cascade)
   availabilities CoachAvailability[]
 
-  @@index([status])
   @@map("coach_profile")
 }
 
@@ -76,22 +74,22 @@ model SuperAdmin {
 }
 
 model User {
-  id            String         @id
+  id            String   @id
   name          String
-  email         String         @unique
-  emailVerified Boolean        @default(false)
+  email         String   @unique
+  emailVerified Boolean  @default(false)
   image         String?
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
   banExpires    DateTime?
   banReason     String?
-  banned        Boolean?       @default(false)
+  banned        Boolean? @default(false)
   role          String?
 
-  accounts      Account[]
-  invitations   Invitation[]
-  members       Member[]
-  sessions      Session[]
+  accounts    Account[]
+  invitations Invitation[]
+  members     Member[]
+  sessions    Session[]
 
   @@map("user")
 }
@@ -169,6 +167,9 @@ model Member {
   role      OrgRole          @default(member)
   status    MembershipStatus @default(ACTIVE)
 
+  disabledAt     DateTime?
+  disabledReason String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -197,18 +198,13 @@ model Invitation {
   revokedAt      DateTime?
   tokenLast4     String?
 
-  inviter        User           @relation(fields: [inviterId], references: [id], onDelete: Cascade)
-  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  inviter      User         @relation(fields: [inviterId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
   @@index([email])
   @@index([organizationId, email])
   @@map("invitation")
-}
-
-enum CoachStatus {
-  ACTIVE
-  DISABLED
 }
 
 enum MembershipStatus {
@@ -237,5 +233,5 @@ enum Weekday {
   THU
   FRI
   SAT
-  SUN
+  SUNy
 }

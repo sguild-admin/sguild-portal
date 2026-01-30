@@ -155,6 +155,11 @@ export const superAdminService = {
   async addOrgMember(headers: Headers, input: AddOrgMemberInput) {
     await requireSuperAdmin(headers)
 
+    const roleList = Array.isArray(input.role) ? input.role : [input.role]
+    if (roleList.some((role) => role === "owner")) {
+      throw new AppError("BAD_REQUEST", "Cannot promote to owner")
+    }
+
     // Server-only addMember does not require session headers :contentReference[oaicite:3]{index=3}
     return auth.api.addMember({
       body: {
@@ -168,6 +173,11 @@ export const superAdminService = {
 
   async inviteOrgMember(headers: Headers, input: InviteOrgMemberInput) {
     await requireSuperAdmin(headers)
+
+    const roleList = Array.isArray(input.role) ? input.role : [input.role]
+    if (roleList.some((role) => role === "owner")) {
+      throw new AppError("BAD_REQUEST", "Cannot promote to owner")
+    }
 
     // createInvitation requires session cookies (pass headers) :contentReference[oaicite:4]{index=4}
     return auth.api.createInvitation({

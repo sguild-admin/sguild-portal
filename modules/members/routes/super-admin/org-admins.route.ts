@@ -69,6 +69,10 @@ export async function POST(req: Request, ctx: { params: Promise<{ orgId: string 
     const body = await req.json()
     const input = CreateAdminSchema.parse(body)
 
+    if (input.role === "owner") {
+      throw new AppError("BAD_REQUEST", "Cannot promote to owner")
+    }
+
     const user = await prisma.user.findFirst({
       where: { email: input.email.toLowerCase() },
       select: { id: true, email: true, name: true },
@@ -82,6 +86,9 @@ export async function POST(req: Request, ctx: { params: Promise<{ orgId: string 
     })
 
     if (existing) {
+      if (existing.role === "owner") {
+        throw new AppError("BAD_REQUEST", "Owner role is immutable")
+      }
       const updated = await prisma.member.update({
         where: { id: existing.id },
         data: { role: input.role, status: "ACTIVE" },

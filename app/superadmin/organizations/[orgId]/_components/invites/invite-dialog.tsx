@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 
-export type InviteRole = "admin" | "owner" | "coach"
+export type InviteRole = "admin" | "coach"
 
 type ApiOk<T> = { ok: true; data: T }
 type ApiFail = { ok: false; error: string }
@@ -42,7 +42,7 @@ async function apiCreateInvite(
   orgId: string,
   input: { email: string; role: InviteRole; expiresInDays: number }
 ): Promise<InviteCreated> {
-  const res = await fetch(`/api/super-admin/orgs/${orgId}/invitations`, {
+  const res = await fetch(`/api/super-admin/organizations/${orgId}/invitations`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input),
@@ -76,7 +76,6 @@ export function InviteDialog({
   const isValidEmail = Boolean(trimmedEmail.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/))
 
   const roleDescriptions: Record<InviteRole, string> = {
-    owner: "Full access including billing and org settings",
     admin: "Manage staff, schedules, clients",
     coach: "Coach tools only",
   }
@@ -90,10 +89,7 @@ export function InviteDialog({
       return
     }
     if (prefill?.email) setEmail(prefill.email)
-    const role =
-      prefill?.role === "owner" || prefill?.role === "admin" || prefill?.role === "coach"
-        ? prefill.role
-        : "admin"
+    const role = prefill?.role === "admin" || prefill?.role === "coach" ? prefill.role : "admin"
     setRole(role)
   }, [open, prefill])
 
@@ -157,46 +153,29 @@ export function InviteDialog({
             <Label htmlFor="invite-role" className="text-sm font-medium">
               Role
             </Label>
-            {role === "coach" ? (
-              <>
-                <Input
+            <>
+              <Select value={role} onValueChange={(value) => setRole(value as InviteRole)}>
+                <SelectTrigger
                   id="invite-role"
-                  value="Coach"
-                  readOnly
-                  className="h-10 border-border/60 bg-muted/30 focus-visible:ring-0 focus-visible:ring-offset-0"
-                />
-                <p className="pl-1 text-xs text-muted-foreground">Coach tools only</p>
-              </>
-            ) : (
-              <>
-                <Select value={role} onValueChange={(value) => setRole(value as InviteRole)}>
-                  <SelectTrigger
-                    id="invite-role"
-                    className="h-10 border-border/60 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/30"
-                    disabled={submitting}
-                    aria-describedby={roleDescriptionId}
-                  >
-                    <SelectValue placeholder="Select a role" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem
-                      value="owner"
-                      text="Owner"
-                      description="Full access including billing and org settings"
-                    />
-                    <SelectItem
-                      value="admin"
-                      text="Admin"
-                      description="Manage staff, schedules, clients"
-                    />
-                    <SelectItem value="coach" text="Coach" description="Coach tools only" />
-                  </SelectContent>
-                </Select>
-                <p id={roleDescriptionId} className="pl-1 text-xs text-muted-foreground">
-                  {roleDescriptions[role]}
-                </p>
-              </>
-            )}
+                  className="h-10 border-border/60 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/30"
+                  disabled={submitting}
+                  aria-describedby={roleDescriptionId}
+                >
+                  <SelectValue placeholder="Select a role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem
+                    value="admin"
+                    text="Admin"
+                    description="Manage staff, schedules, clients"
+                  />
+                  <SelectItem value="coach" text="Coach" description="Coach tools only" />
+                </SelectContent>
+              </Select>
+              <p id={roleDescriptionId} className="pl-1 text-xs text-muted-foreground">
+                {roleDescriptions[role]}
+              </p>
+            </>
           </div>
         </div>
 
@@ -210,7 +189,7 @@ export function InviteDialog({
             Cancel
           </Button>
           <Button onClick={onSubmit} type="button" disabled={submitting || !isValidEmail}>
-            {submitting ? "Sending..." : "Send invite"}
+            {submitting ? "Inviting..." : "Invite"}
           </Button>
         </DialogFooter>
       </DialogContent>

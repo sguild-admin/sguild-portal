@@ -27,24 +27,22 @@ export async function GET(
 
     const member = await prisma.member.findUnique({
       where: { id: memberId },
-      select: { id: true, orgId: true, userId: true },
+      select: { id: true, orgId: true, userId: true, role: true },
     })
 
     if (!member || member.orgId !== orgId) {
       throw new AppError("NOT_FOUND", "Coach not found")
     }
 
-    const userId = member.userId
-
     let profile = await prisma.coachProfile.findUnique({
-      where: { orgId_userId: { orgId, userId } },
-      include: { user: true, availabilities: true },
+      where: { memberId: member.id },
+      include: { member: { include: { user: true } }, availabilities: true },
     })
 
     if (!profile) {
       profile = await prisma.coachProfile.create({
-        data: { orgId, userId, status: "ACTIVE" },
-        include: { user: true, availabilities: true },
+        data: { memberId: member.id },
+        include: { member: { include: { user: true } }, availabilities: true },
       })
     }
 
@@ -67,37 +65,42 @@ export async function PATCH(
 
     const member = await prisma.member.findUnique({
       where: { id: memberId },
-      select: { id: true, orgId: true, userId: true },
+      select: { id: true, orgId: true, userId: true, role: true },
     })
 
     if (!member || member.orgId !== orgId) {
       throw new AppError("NOT_FOUND", "Coach not found")
     }
 
-    const userId = member.userId
-
     const updateData = {
       ...(input.profile ?? {}),
-      ...(input.status ? { status: input.status } : {}),
+    }
+
+    if (input.status) {
+      if (member.role === "owner") {
+        throw new AppError("BAD_REQUEST", "Owner membership cannot be disabled")
+      }
+      await prisma.member.update({
+        where: { id: member.id },
+        data: { status: input.status === "DISABLED" ? "DISABLED" : "ACTIVE" },
+      })
     }
 
     let profile = await prisma.coachProfile.upsert({
-      where: { orgId_userId: { orgId, userId } },
+      where: { memberId: member.id },
       create: {
-        orgId,
-        userId,
-        status: input.status ?? "ACTIVE",
+        memberId: member.id,
         ...(input.profile ?? {}),
       },
       update: updateData,
-      include: { user: true, availabilities: true },
+      include: { member: { include: { user: true } }, availabilities: true },
     })
 
     if (input.availability) {
       await coachAvailabilityRepo.replaceForCoachProfile(profile.id, input.availability)
       const refreshed = await prisma.coachProfile.findUnique({
-        where: { orgId_userId: { orgId, userId } },
-        include: { user: true, availabilities: true },
+        where: { memberId: member.id },
+        include: { member: { include: { user: true } }, availabilities: true },
       })
       if (!refreshed) {
         throw new AppError("NOT_FOUND", "Coach profile not found")

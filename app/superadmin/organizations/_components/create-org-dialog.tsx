@@ -26,7 +26,7 @@ export type OrgCreated = {
 }
 
 async function apiCreateOrg(input: { name: string }): Promise<OrgCreated> {
-  const res = await fetch("/api/super-admin/orgs", {
+  const res = await fetch("/api/super-admin/organizations", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input),

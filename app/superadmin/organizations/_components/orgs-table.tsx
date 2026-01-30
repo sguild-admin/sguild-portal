@@ -39,7 +39,7 @@ type OrgCounts = {
   pendingInvites: number
 }
 
-type OrgTabTarget = "admins" | "coaches" | "invitations"
+type OrgTabTarget = "team" | "invitations"
 
 function fmtDate(d: unknown) {
   if (!d) return "—"
@@ -163,7 +163,7 @@ export function OrgsTable({
                       className="cursor-pointer rounded-md border border-border/60 px-2 py-2 text-left"
                       onClick={(event) => {
                         event.stopPropagation()
-                        onTabClick?.(org, "coaches")
+                        onTabClick?.(org, "team")
                       }}
                     >
                       <div className="text-[11px] uppercase tracking-wide">Coaches</div>
@@ -176,7 +176,7 @@ export function OrgsTable({
                       className="cursor-pointer rounded-md border border-border/60 px-2 py-2 text-left"
                       onClick={(event) => {
                         event.stopPropagation()
-                        onTabClick?.(org, "admins")
+                        onTabClick?.(org, "team")
                       }}
                     >
                       <div className="text-[11px] uppercase tracking-wide">Admins</div>
@@ -259,7 +259,7 @@ export function OrgsTable({
                       className="w-full cursor-pointer text-left"
                       onClick={(event) => {
                         event.stopPropagation()
-                        onTabClick?.(org, "coaches")
+                        onTabClick?.(org, "team")
                       }}
                     >
                       {typeof org._count?.members === "number" ? org._count.members : "—"}
@@ -272,7 +272,7 @@ export function OrgsTable({
                       className="w-full cursor-pointer text-left"
                       onClick={(event) => {
                         event.stopPropagation()
-                        onTabClick?.(org, "admins")
+                        onTabClick?.(org, "team")
                       }}
                     >
                       {meta?.admins ?? "—"}

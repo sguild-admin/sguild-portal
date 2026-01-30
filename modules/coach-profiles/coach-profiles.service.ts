@@ -42,6 +42,6 @@ export const coachProfilesService = {
   async setStatus(headers: Headers, input: { userId: string; status: CoachStatus }) {
     await requireAdminOrOwner(headers)
     const orgId = await requireActiveOrgId(headers)
-    return coachProfilesRepo.setStatus(orgId, input.userId, input.status as any)
+    return coachProfilesRepo.setStatus(orgId, input.userId, input.status)
   },
 }

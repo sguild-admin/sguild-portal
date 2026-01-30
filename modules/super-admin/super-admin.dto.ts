@@ -19,6 +19,20 @@ export type SuperAdminOrgDto = {
   } | null
 }
 
+export type SuperAdminOrgMemberDto = {
+  memberId: string
+  userId: string
+  name: string | null
+  email: string | null
+  image: string | null
+  role: "owner" | "admin" | "coach" | "member"
+  status: "ACTIVE" | "DISABLED"
+  disabledAt: Date | null
+  disabledReason: string | null
+  coachProfileId: string | null
+  createdAt: Date
+}
+
 export function toSuperAdminUserDto(u: any): SuperAdminUserDto {
   return {
     id: String(u?.id),
@@ -43,5 +57,21 @@ export function toSuperAdminOrgDto(o: any): SuperAdminOrgDto {
           offersOceanLessons: Boolean(o.settings.offersOceanLessons),
         }
       : null,
+  }
+}
+
+export function toSuperAdminOrgMemberDto(m: any): SuperAdminOrgMemberDto {
+  return {
+    memberId: String(m?.id),
+    userId: String(m?.userId ?? m?.user?.id ?? ""),
+    name: m?.user?.name ?? null,
+    email: m?.user?.email ?? null,
+    image: m?.user?.image ?? null,
+    role: (m?.role ?? "member") as SuperAdminOrgMemberDto["role"],
+    status: (m?.status ?? "ACTIVE") as SuperAdminOrgMemberDto["status"],
+    disabledAt: m?.disabledAt ?? null,
+    disabledReason: m?.disabledReason ?? null,
+    coachProfileId: m?.coachProfile?.id ?? null,
+    createdAt: m?.createdAt ?? new Date(),
   }
 }

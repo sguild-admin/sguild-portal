@@ -47,7 +47,7 @@ const US_TIME_ZONES = [
 ]
 
 async function apiGetOrg(orgId: string): Promise<OrgSettingsPayload> {
-  const res = await fetch(`/api/super-admin/orgs/${orgId}`, {
+  const res = await fetch(`/api/super-admin/organizations/${orgId}`, {
     method: "GET",
     cache: "no-store",
   })
@@ -61,7 +61,7 @@ async function apiUpdateOrg(
   orgId: string,
   input: { name?: string; slug?: string; timeZone?: string; offersOceanLessons?: boolean }
 ) {
-  const res = await fetch(`/api/super-admin/orgs/${orgId}`, {
+  const res = await fetch(`/api/super-admin/organizations/${orgId}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input),

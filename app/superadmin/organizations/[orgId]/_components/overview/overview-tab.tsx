@@ -8,13 +8,14 @@ export type OverviewOrgDto = {
   slug?: string | null
   createdAt?: unknown
   _count?: { members: number }
+  settings?: {
+    timeZone: string
+    offersOceanLessons: boolean
+  } | null
 }
 
 type OverviewTabProps = {
   org: OverviewOrgDto
-  adminsCount: number
-  pendingInvites: number
-  invitesCount: number
 }
 
 function fmtDate(d?: unknown) {
@@ -23,31 +24,15 @@ function fmtDate(d?: unknown) {
   return Number.isNaN(date.getTime()) ? "—" : date.toLocaleDateString()
 }
 
-function Stat({ label, value }: { label: string; value: React.ReactNode }) {
-  return (
-    <div className="rounded-lg border border-border/60 bg-muted/20 p-4">
-      <div className="text-xs text-muted-foreground">{label}</div>
-      <div className="mt-1 text-2xl font-semibold tabular-nums leading-none text-foreground">
-        {value}
-      </div>
-    </div>
-  )
-}
-
-export function OverviewTab({
-  org,
-  adminsCount,
-  pendingInvites,
-  invitesCount,
-}: OverviewTabProps) {
-  const coachesCount =
-    typeof org._count?.members === "number" ? org._count.members : "—"
-
+export function OverviewTab({ org }: OverviewTabProps) {
   return (
     <div className="grid gap-6 md:grid-cols-2 md:items-start">
       <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">Organization</CardTitle>
+        <CardHeader className="pb-4 pt-4">
+          <div className="flex w-full flex-col justify-center gap-3">
+            <CardTitle className="text-base">Overview</CardTitle>
+            <div className="h-px w-full bg-border/60" />
+          </div>
         </CardHeader>
 
         <CardContent className="pt-0">
@@ -70,21 +55,36 @@ export function OverviewTab({
                 {fmtDate(org.createdAt)}
               </div>
             </div>
+
+            <div className="space-y-1">
+              <div className="text-xs text-muted-foreground">Time zone</div>
+              <div className="text-sm font-medium text-foreground">
+                {org.settings?.timeZone ?? "—"}
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <div className="text-xs text-muted-foreground">Ocean lessons</div>
+              <div className="text-sm font-medium text-foreground">
+                {org.settings
+                  ? org.settings.offersOceanLessons
+                    ? "Offered"
+                    : "Not Offered"
+                  : "—"}
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Counts</CardTitle>
+          <CardTitle className="text-base">Log</CardTitle>
         </CardHeader>
 
         <CardContent className="pt-0">
-          <div className="grid grid-cols-2 gap-4">
-            <Stat label="Coaches" value={coachesCount} />
-            <Stat label="Admins" value={adminsCount} />
-            <Stat label="Pending invites" value={pendingInvites} />
-            <Stat label="Total invites" value={invitesCount} />
+          <div className="rounded-lg border border-dashed border-border/60 bg-muted/20 p-4 text-sm text-muted-foreground">
+            Coming soon.
           </div>
         </CardContent>
       </Card>

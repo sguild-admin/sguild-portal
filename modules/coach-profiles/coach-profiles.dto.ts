@@ -1,4 +1,4 @@
-import type { CoachAvailability, CoachProfile, User, Weekday } from "@prisma/client"
+import type { CoachAvailability, CoachProfile, Member, User, Weekday } from "@prisma/client"
 import type { CoachAvailabilityDto } from "@/modules/coach-availability/coach-availability.dto"
 
 export type CoachStatus = "ACTIVE" | "DISABLED"
@@ -38,13 +38,21 @@ function weekdayToNumber(value: Weekday): number {
 }
 
 export function toCoachProfileDto(
-  p: CoachProfile & { user?: User | null; availabilities?: CoachAvailability[] }
+  p: CoachProfile & {
+    member?: (Member & { user?: User | null }) | null
+    availabilities?: CoachAvailability[]
+  }
 ): CoachProfileDto {
+  const member = p.member
+  if (!member) {
+    throw new Error("Coach profile missing member")
+  }
+
   return {
     id: p.id,
-    orgId: p.orgId,
-    userId: p.userId,
-    status: p.status as CoachStatus,
+    orgId: member.orgId,
+    userId: member.userId,
+    status: member.status as CoachStatus,
     nickname: p.nickname,
     bio: p.bio,
     notes: p.notes,
@@ -59,12 +67,12 @@ export function toCoachProfileDto(
     })),
     createdAt: p.createdAt,
     updatedAt: p.updatedAt,
-    user: p.user
+    user: member.user
       ? {
-          id: p.user.id,
-          email: p.user.email,
-          name: p.user.name ?? null,
-          image: p.user.image ?? null,
+          id: member.user.id,
+          email: member.user.email,
+          name: member.user.name ?? null,
+          image: member.user.image ?? null,
         }
       : undefined,
   }
